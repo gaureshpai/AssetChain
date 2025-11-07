@@ -53,8 +53,23 @@ export default function MarketplacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-300 flex items-center justify-center">
-        Loading marketplace...
+      <div className="min-h-screen bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            <div className="h-8 w-48 rounded bg-slate-700/60" />
+            <div className="mt-2 h-4 w-64 rounded bg-slate-800/60" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="border border-slate-700 bg-slate-800/50 backdrop-blur-lg rounded-lg p-6">
+                <div className="h-6 w-56 rounded bg-slate-700/60 mb-2" />
+                <div className="h-4 w-80 rounded bg-slate-700/60 mb-4" />
+                <div className="h-4 w-full rounded bg-slate-700/60" />
+                <div className="mt-4 h-9 w-28 rounded bg-slate-700/60" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
