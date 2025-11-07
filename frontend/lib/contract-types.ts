@@ -37,6 +37,40 @@ export interface RegisterPropertyParams {
   imageUrl: string;
 }
 
+export interface CreatePropertyRequestParams {
+  name: string;
+  partnershipAgreementUrl: string;
+  maintenanceAgreementUrl: string;
+  rentAgreementUrl: string;
+  imageUrl: string;
+  ownerAddresses: string[];
+  percentages: number[];
+}
+
+export interface Owner {
+  ownerAddress: string;
+  percentage: number;
+}
+
+export enum PropertyRequestStatus {
+  Pending,
+  Approved,
+  Rejected,
+}
+
+export interface PropertyRequest {
+  id: number;
+  name: string;
+  partnershipAgreementUrl: string;
+  maintenanceAgreementUrl: string;
+  rentAgreementUrl: string;
+  imageUrl: string;
+  requester: string;
+  owners: Owner[];
+  status: PropertyRequestStatus;
+  propertyId: number;
+}
+
 export interface FractionalNFTDetails {
   address: string;
   name: string;

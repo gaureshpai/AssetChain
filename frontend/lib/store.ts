@@ -33,12 +33,15 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
     try {
       await blockchainService.initialize();
       const properties = await blockchainService.getAllProperties();
+      console.log("Properties loaded from blockchain:", properties);
       
       const filteredProperties = properties
         .filter(property => {
           if (!userAddress) return true; // If no userAddress, show all
           return property.owner.toLowerCase() === userAddress.toLowerCase();
         });
+
+        console.log("Filtered properties:", filteredProperties);
       
       set({
         buildings: filteredProperties,
@@ -99,6 +102,7 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
     try {
       await blockchainService.initialize();
       const ownedFractions = await blockchainService.getOwnedFractionalNFTs(userAddress);
+      console.log("Owned fractional NFTs loaded from blockchain:", ownedFractions);
       set({
         ownedFractionalNFTs: ownedFractions,
         isLoadingBlockchain: false,

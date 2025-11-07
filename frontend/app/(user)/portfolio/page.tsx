@@ -119,9 +119,6 @@ export default function PortfolioDashboard() {
                         </div>
                       </div>
                     </CardHeader>
-                    import AssetTransferModal from "@/components/user/asset-transfer-modal";
-
-                    // ... (imports)
 
                     <CardContent>
                       <div className="space-y-3">

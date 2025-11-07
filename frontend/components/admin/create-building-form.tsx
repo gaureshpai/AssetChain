@@ -29,8 +29,11 @@ interface FileUpload {
 export default function CreateBuildingForm() {
   const [formData, setFormData] = useState({
     name: "",
-    owner: "",
   });
+  const [owners, setOwners] = useState<{
+    address: string;
+    percentage: number;
+  }[]>([{ address: "", percentage: 0 }]);
   const [files, setFiles] = useState<FileUpload>({
     partnershipAgreement: null,
     maintenanceAgreement: null,
@@ -61,13 +64,64 @@ export default function CreateBuildingForm() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleOwnerChange = (
+    index: number,
+    field: "address" | "percentage",
+    value: string
+  ) => {
+    const newOwners = [...owners];
+    if (field === "percentage") {
+      newOwners[index][field] = Number(value);
+    } else {
+      newOwners[index][field] = value;
+    }
+    setOwners(newOwners);
+  };
+
+  const addOwner = () => {
+    setOwners([...owners, { address: "", percentage: 0 }]);
+  };
+
+  const removeOwner = (index: number) => {
+    const newOwners = owners.filter((_, i) => i !== index);
+    setOwners(newOwners);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccess(false);
 
-    if (!formData.name || !formData.owner) {
-      setErrorMsg("Please fill in all required fields");
+    if (!formData.name) {
+      setErrorMsg("Please fill in the building name.");
+      return;
+    }
+
+    if (owners.length === 0) {
+      setErrorMsg("At least one owner is required.");
+      return;
+    }
+
+    const ownerAddresses: string[] = [];
+    const percentages: number[] = [];
+    let totalPercentage = 0;
+
+    for (const owner of owners) {
+      if (!owner.address) {
+        setErrorMsg("All owner addresses must be filled.");
+        return;
+      }
+      if (owner.percentage <= 0) {
+        setErrorMsg("All owner percentages must be greater than 0.");
+        return;
+      }
+      ownerAddresses.push(owner.address);
+      percentages.push(owner.percentage);
+      totalPercentage += owner.percentage;
+    }
+
+    if (totalPercentage !== 10000) {
+      setErrorMsg("Total percentage for owners must equal 100% (10000 basis points).");
       return;
     }
 
@@ -89,20 +143,21 @@ export default function CreateBuildingForm() {
       const rentAgreementUrl = await uploadFileToAzure(files.rentAgreement);
       const imageUrl = await uploadFileToAzure(files.imageFile);
 
-      await blockchainService.registerProperty({
+      await blockchainService.createPropertyRequest({
         name: formData.name,
-        owner: formData.owner,
         partnershipAgreementUrl,
         maintenanceAgreementUrl,
         rentAgreementUrl,
-        imageUrl
+        imageUrl,
+        ownerAddresses,
+        percentages,
       });
 
       setSuccess(true);
       setFormData({
         name: "",
-        owner: "",
       });
+      setOwners([{ address: "", percentage: 0 }]);
       setFiles({
         partnershipAgreement: null,
         maintenanceAgreement: null,
@@ -110,8 +165,8 @@ export default function CreateBuildingForm() {
         imageFile: null,
       });
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to register property on blockchain.");
-      toast.error(err.message || "Failed to register property on blockchain.");
+      setErrorMsg(err.message || "Failed to create property request on blockchain.");
+      toast.error(err.message || "Failed to create property request on blockchain.");
     }
     finally {
       setUploading(false);
@@ -169,23 +224,66 @@ export default function CreateBuildingForm() {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
-                Owner Wallet Address *
-              </label>
-              <Input
-                type="text"
-                name="owner"
-                placeholder="0x..."
-                value={formData.owner}
-                onChange={handleInputChange}
-                className="bg-slate-700/50 border-slate-600 text-white font-mono text-xs"
-                required
-              />
             </div>
-          </div>
 
-          {/* Document Uploads */}
+            {/* Owners and Percentages */}
+            <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+              <h3 className="text-white font-semibold">Owners and Percentages (Total must be 100%)</h3>
+              {owners.map((owner, index) => (
+                <div key={index} className="flex items-end gap-2">
+                  <div className="flex-grow space-y-2">
+                    <label className="text-sm font-medium text-slate-200">
+                      Owner {index + 1} Wallet Address *
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="0x..."
+                      value={owner.address}
+                      onChange={(e) =>
+                        handleOwnerChange(index, "address", e.target.value)
+                      }
+                      className="bg-slate-700/50 border-slate-600 text-white font-mono text-xs"
+                      required
+                    />
+                  </div>
+                  <div className="w-24 space-y-2">
+                    <label className="text-sm font-medium text-slate-200">
+                      Percentage (%) *
+                    </label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="100"
+                      placeholder="e.g., 50"
+                      value={owner.percentage / 100} // Display as percentage, but store as basis points
+                      onChange={(e) =>
+                        handleOwnerChange(index, "percentage", Number(e.target.value) * 100)
+                      }
+                      className="bg-slate-700/50 border-slate-600 text-white"
+                      required
+                    />
+                  </div>
+                  {owners.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      onClick={() => removeOwner(index)}
+                      className="h-10 w-10 p-0"
+                    >
+                      -
+                    </Button>
+                  )}
+                </div>
+              ))}
+              <Button type="button" onClick={addOwner} className="w-full bg-slate-600 hover:bg-slate-500 text-white">
+                Add Another Owner
+              </Button>
+              <p className="text-sm text-slate-400 mt-2">
+                Total Percentage: {owners.reduce((sum, owner) => sum + owner.percentage, 0) / 100}%
+              </p>
+            </div>
+
+            {/* Document Uploads */}
           <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
             <h3 className="text-white font-semibold">Required Documents</h3>
 

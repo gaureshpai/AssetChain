@@ -4,6 +4,7 @@ import type React from 'react';
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Magic } from 'magic-sdk';
 import { blockchainService } from './blockchain-service';
+import { getAccountByEmail, hasGanacheAccount } from './ganache-accounts';
 
 interface User {
   email?: string;
@@ -59,9 +60,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isLoggedIn) {
           const info = await (magic.user as any).getInfo();
           if (info?.email) {
-            // Initialize EVM wallet via Magic and get the address
-            const address = await blockchainService.initializeWithMagic(magic);
-            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+            // Check if email has a mapped Ganache account
+            const ganacheAccount = getAccountByEmail(info.email);
+            if (!ganacheAccount) {
+              console.error(`No Ganache account mapped for ${info.email}`);
+              await magic.user.logout();
+              return;
+            }
+
+            // Initialize blockchain service with the mapped private key
+            const address = await blockchainService.initialize(ganacheAccount.privateKey);
+            
+            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com').toLowerCase();
             const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(info.email.toLowerCase());
             const next = {
               email: info.email,
@@ -93,12 +103,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       if (!magic) throw new Error('Magic SDK not initialized');
+      
+      // Check if email has a mapped Ganache account
+      const ganacheAccount = getAccountByEmail(email);
+      if (!ganacheAccount) {
+        throw new Error(`No Ganache account mapped for ${email}. Please use one of the pre-configured emails.`);
+      }
+
       // Passwordless: send magic link to email
       await magic.auth.loginWithEmailOTP({ email });
 
-      // Initialize EVM wallet via Magic and get the address
-      const address = await blockchainService.initializeWithMagic(magic);
-      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+      // Initialize blockchain service with the mapped private key and address
+      const address = await blockchainService.initialize(ganacheAccount.privateKey);
+      
+      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com').toLowerCase();
       const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(email.toLowerCase());
       const next = {
         email,

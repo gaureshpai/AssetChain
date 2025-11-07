@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
+import { getAvailableUserEmails } from '@/lib/ganache-accounts';
 
 export default function Home() {
   const { user, authenticate, isLoading } = useAuth();
@@ -76,9 +77,9 @@ export default function Home() {
               <p className="text-red-400 text-sm text-center mt-4">{error}</p>
             )}
 
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-3">
               <p className="text-xs text-gray-400">By continuing, you agree to our Terms and Privacy Policy.</p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500">
                 Admin? <a href="/admin-login" className="text-blue-400 hover:underline">Sign in here</a>
               </p>
             </div>

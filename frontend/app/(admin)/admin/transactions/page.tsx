@@ -88,7 +88,9 @@ export default function TransactionsPage() {
                   <div>Block: {l.blockNumber}</div>
                   <div>Address: {l.address}</div>
                   <div>Tx: {l.txHash}</div>
-                  <div>Args: {JSON.stringify(l.args)}</div>
+                  <div>Args: {JSON.stringify(l.args, (key, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+            )}</div>
                 </div>
               </CardContent>
             </Card>
