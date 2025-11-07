@@ -16,10 +16,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <meta httpEquiv="Content-Security-Policy" 
-              content="default-src 'self' 'https://4ecd215985c1.ngrok-free.app' 'https://*.ngrok-free.app' 'https://*.magic.link' 'wss://*.magic.link'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' 'https://4ecd215985c1.ngrok-free.app' 'https://*.ngrok-free.app' 'https://*.magic.link' 'wss://*.magic.link'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"/>
-      </head>
       <body>
         <AuthProvider>
           <UserNav />

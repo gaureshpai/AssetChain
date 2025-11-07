@@ -29,7 +29,7 @@ const createMagic = () => {
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY) {
     return new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY, {
       network: {
-        rpcUrl: "https://4ecd215985c1.ngrok-free.app/",
+        rpcUrl: "http://127.0.0.1:7545",
         chainId: 1337,
       }
     });
