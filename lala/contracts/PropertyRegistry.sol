@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Fractionalizer.sol";
+import "./FractionalNFT.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -40,6 +41,22 @@ contract PropertyRegistry is ERC721, Ownable {
         uint256 propertyId; // Set when approved
     }
 
+    enum ListingStatus { Active, Cancelled, Sold }
+
+    struct Listing {
+        uint256 listingId;
+        uint256 propertyId;
+        address fractionalNFTAddress;
+        address seller;
+        uint256 amount; // Amount of fractional tokens listed
+        uint256 pricePerShare; // Price per fractional token in WEI
+        ListingStatus status;
+    }
+
+    uint256 private _listingCount;
+    mapping(uint256 => Listing) public listings;
+    mapping(address => uint256[]) public sellerListings; // Seller to list of listing IDs
+
     mapping(uint256 => Property) private properties;
     mapping(uint256 => PropertyRequest) private requests;
     mapping(uint256 => Owner[]) private propertyOwners;
@@ -51,6 +68,9 @@ contract PropertyRegistry is ERC721, Ownable {
     event PropertyRequestCreated(uint256 indexed requestId, string name, address indexed requester);
     event PropertyRequestApproved(uint256 indexed requestId, uint256 indexed propertyId);
     event PropertyRequestRejected(uint256 indexed requestId);
+    event NFTListedForSale(uint256 indexed listingId, uint256 indexed propertyId, address indexed seller, address fractionalNFTAddress, uint256 amount, uint256 pricePerShare);
+    event NFTListingCancelled(uint256 indexed listingId);
+    event NFTPurchased(uint256 indexed listingId, uint256 indexed propertyId, address indexed buyer, uint256 amount, uint256 totalPrice);
 
     constructor() ERC721("RealEstateNFT", "RENT") Ownable(msg.sender) {
     }
@@ -58,6 +78,108 @@ contract PropertyRegistry is ERC721, Ownable {
     function setFractionalizerAddress(address _fractionalizerAddress) external onlyOwner {
         require(address(fractionalizer) == address(0), "Fractionalizer address already set");
         fractionalizer = Fractionalizer(_fractionalizerAddress);
+    }
+
+    // Marketplace functions
+    function listFractionalNFTForSale(
+        uint256 _propertyId,
+        address _fractionalNFTAddress,
+        uint256 _amount,
+        uint256 _pricePerShare
+    ) external {
+        require(_amount > 0, "Amount to list must be greater than 0");
+        require(_pricePerShare > 0, "Price per share must be greater than 0");
+        require(fractionalizer.getFractionalContract(_propertyId) == _fractionalNFTAddress, "Invalid Fractional NFT address for property");
+
+        // Ensure the seller owns enough fractional tokens
+        FractionalNFT fractionalNFT = FractionalNFT(_fractionalNFTAddress);
+        require(fractionalNFT.balanceOf(msg.sender) >= _amount, "Insufficient fractional tokens");
+
+        // Transfer fractional tokens from seller to this contract (escrow)
+        // This requires the seller to have approved this contract to spend their tokens
+        require(fractionalNFT.transferFrom(msg.sender, address(this), _amount), "Token transfer failed. Did you approve this contract?");
+
+        _listingCount++;
+        uint256 newListingId = _listingCount;
+
+        listings[newListingId] = Listing({
+            listingId: newListingId,
+            propertyId: _propertyId,
+            fractionalNFTAddress: _fractionalNFTAddress,
+            seller: msg.sender,
+            amount: _amount,
+            pricePerShare: _pricePerShare,
+            status: ListingStatus.Active
+        });
+        sellerListings[msg.sender].push(newListingId);
+
+        emit NFTListedForSale(newListingId, _propertyId, msg.sender, _fractionalNFTAddress, _amount, _pricePerShare);
+    }
+
+    function cancelListing(uint256 _listingId) external {
+        Listing storage listing = listings[_listingId];
+        require(listing.listingId == _listingId, "Listing does not exist");
+        require(listing.seller == msg.sender, "Only seller can cancel listing");
+        require(listing.status == ListingStatus.Active, "Listing is not active");
+
+        // Transfer fractional tokens back to seller
+        FractionalNFT fractionalNFT = FractionalNFT(listing.fractionalNFTAddress);
+        require(fractionalNFT.transfer(listing.seller, listing.amount), "Failed to return tokens to seller");
+
+        listing.status = ListingStatus.Cancelled;
+
+        emit NFTListingCancelled(_listingId);
+    }
+
+    function buyListedFractionalNFT(uint256 _listingId, uint256 _amountToBuy) external payable {
+        Listing storage listing = listings[_listingId];
+        require(listing.listingId == _listingId, "Listing does not exist");
+        require(listing.status == ListingStatus.Active, "Listing is not active");
+        require(listing.seller != msg.sender, "Cannot buy your own listing");
+        require(_amountToBuy > 0, "Amount to buy must be greater than 0");
+        require(_amountToBuy <= listing.amount, "Amount to buy exceeds listed amount");
+
+        uint256 totalPrice = _amountToBuy * listing.pricePerShare;
+        require(msg.value == totalPrice, "Incorrect ETH amount sent");
+
+        FractionalNFT fractionalNFT = FractionalNFT(listing.fractionalNFTAddress);
+
+        // Transfer fractional tokens to buyer
+        require(fractionalNFT.transfer(msg.sender, _amountToBuy), "Failed to transfer tokens to buyer");
+
+        // Transfer ETH to seller
+        payable(listing.seller).transfer(msg.value);
+
+        listing.amount -= _amountToBuy;
+        if (listing.amount == 0) {
+            listing.status = ListingStatus.Sold;
+        }
+
+        emit NFTPurchased(_listingId, listing.propertyId, msg.sender, _amountToBuy, totalPrice);
+    }
+
+    function getListing(uint256 _listingId) external view returns (Listing memory) {
+        require(listings[_listingId].listingId == _listingId, "Listing does not exist");
+        return listings[_listingId];
+    }
+
+    function getAllActiveListings() external view returns (Listing[] memory) {
+        uint256 activeCount = 0;
+        for (uint256 i = 1; i <= _listingCount; i++) {
+            if (listings[i].status == ListingStatus.Active) {
+                activeCount++;
+            }
+        }
+
+        Listing[] memory activeListings = new Listing[](activeCount);
+        uint256 currentIndex = 0;
+        for (uint256 i = 1; i <= _listingCount; i++) {
+            if (listings[i].status == ListingStatus.Active) {
+                activeListings[currentIndex] = listings[i];
+                currentIndex++;
+            }
+        }
+        return activeListings;
     }
 
     // Create a property request (anyone can submit)
