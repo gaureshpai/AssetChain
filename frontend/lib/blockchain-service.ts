@@ -620,6 +620,9 @@ class BlockchainService {
     const detailsList = await Promise.all(properties.map((p) => this.getFractionalNFTDetails(p.id)));
     console.log("Properties:", detailsList);
 
+    // Fetch all active listings once
+    const allActiveListings = await this.getAllActiveListings();
+
     const results = await Promise.all(detailsList.map(async (details, idx) => {
       if (!details) return null;
       const fractionalNFTContract = new Contract(
@@ -627,8 +630,23 @@ class BlockchainService {
         CONTRACT_CONFIG.fractionalNFT.abi,
         this.provider
       );
-      const balance = await fractionalNFTContract.balanceOf(ownerAddress);
-      if (Number(balance) <= 0) return null;
+      let balance = Number(await fractionalNFTContract.balanceOf(ownerAddress));
+
+      // Calculate listed amount for this specific fractional NFT and owner
+      const listedAmount = allActiveListings.reduce((sum, listing) => {
+        if (
+          listing.seller.toLowerCase() === ownerAddress.toLowerCase() &&
+          listing.fractionalNFTAddress.toLowerCase() === details.address.toLowerCase()
+        ) {
+          return sum + listing.amount;
+        }
+        return sum;
+      }, 0);
+
+      // Add listed amount back to balance for display purposes
+      balance += listedAmount;
+
+      if (balance <= 0) return null;
       const property = properties[idx]!;
       return {
         propertyId: property.id,
@@ -637,8 +655,8 @@ class BlockchainService {
         fractionalNFTName: details.name,
         fractionalNFTSymbol: details.symbol,
         totalSupply: details.totalSupply,
-        balance: Number(balance),
-        percentage: (Number(balance) / details.totalSupply) * 100,
+        balance: balance, // Use the adjusted balance
+        percentage: (balance / details.totalSupply) * 100,
       };
     }));
 

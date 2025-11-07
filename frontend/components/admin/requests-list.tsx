@@ -119,8 +119,13 @@ export default function RequestsList() {
     <div className="space-y-4 mt-6">
       {requests.map((request) => (
         <Card key={request.id}>
-          <CardHeader>
-            <CardTitle>Request #{request.id} - {request.name}</CardTitle>
+          <CardHeader className="flex-row items-center gap-4">
+            {request.imageUrl && (
+              <img src={request.imageUrl} alt={request.name} className="w-16 h-16 object-cover rounded-md" />
+            )}
+            <div className="flex-1">
+              <CardTitle>Request #{request.id} - {request.name}</CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">Requester: {request.requester}</p>

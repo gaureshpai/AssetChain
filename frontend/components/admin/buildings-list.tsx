@@ -120,11 +120,16 @@ export default function BuildingsList() {
     <div className="space-y-4">
       {buildings.map((b: any) => (
         <Card key={b.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              {b.name} <span className="text-xs text-muted-foreground">(ID: {b.id})</span>
-            </CardTitle>
+          <CardHeader className="flex-row items-center gap-4">
+            {b.imageUrl && (
+              <img src={b.imageUrl} alt={b.name} className="w-16 h-16 object-cover rounded-md" />
+            )}
+            <div className="flex-1">
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary" />
+                {b.name} <span className="text-xs text-muted-foreground">(ID: {b.id})</span>
+              </CardTitle>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

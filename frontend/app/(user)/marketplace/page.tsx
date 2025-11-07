@@ -151,11 +151,16 @@ export default function MarketplacePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {displayListings.map((listing) => (
               <Card key={listing.listingId}>
-                <CardHeader>
-                  <CardTitle>{listing.propertyName}</CardTitle>
-                  <CardDescription>
-                    Listed by: {listing.seller}
-                  </CardDescription>
+                <CardHeader className="flex-row items-center gap-4">
+                  {listing.imageUrl && (
+                    <img src={listing.imageUrl} alt={listing.propertyName} className="w-16 h-16 object-cover rounded-md" />
+                  )}
+                  <div className="flex-1">
+                    <CardTitle>{listing.propertyName}</CardTitle>
+                    <CardDescription>
+                      Listed by: {listing.seller}
+                    </CardDescription>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-foreground">
