@@ -20,7 +20,7 @@ function parseAdminCredentials(): Map<string, string> | null {
 }
 
 function isEmailAllowed(email: string): boolean {
-  const list = (process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL || "")
+  const list = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "")
     .split(",")
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean);

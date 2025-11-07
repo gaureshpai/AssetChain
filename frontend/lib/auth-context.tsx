@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (info?.email) {
             // Initialize EVM wallet via Magic and get the address
             const address = await blockchainService.initializeWithMagic(magic);
-            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
             const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(info.email.toLowerCase());
             const next = {
               email: info.email,
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       // Initialize EVM wallet via Magic and get the address
       const address = await blockchainService.initializeWithMagic(magic);
-      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
       const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(email.toLowerCase());
       const next = {
         email,
