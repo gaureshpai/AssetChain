@@ -78,7 +78,19 @@ class BlockchainService {
         return addr || "";
       }
 
-      this.provider = new ethers.JsonRpcProvider(getRpcUrl());
+      this.provider = new ethers.JsonRpcProvider(
+        getRpcUrl(),
+        undefined,
+        {
+          staticNetwork: true,
+          batchMaxCount: 1,
+          fetchOptions: {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          }
+        } as any
+      );
       let currentSigner: Signer | null = null;
 
       if (privateKey) {

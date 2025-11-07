@@ -28,8 +28,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const createMagic = () => {
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY) {
     return new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY, {
-      network:{
-        rpcUrl: "http://127.0.0.1:7545",
+      network: {
+        rpcUrl: "https://4ecd215985c1.ngrok-free.app/",
         chainId: 1337,
       }
     });
