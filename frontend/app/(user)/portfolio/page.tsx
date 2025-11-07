@@ -10,6 +10,8 @@ import { useEffect, useState } from "react"
 import { OwnedFractionalNFT } from "@/lib/contract-types"
 import AssetTransferModal from "@/components/user/asset-transfer-modal"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface OwnershipData {
   totalAssets: number
   fractionalOwnership: OwnedFractionalNFT[]
@@ -56,8 +58,49 @@ export default function PortfolioDashboard() {
 
   if (!mounted || !ownershipData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-foreground">Loading portfolio...</div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-4xl space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24 mb-1" />
+                <Skeleton className="h-3 w-48" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-full mb-1" />
+                <Skeleton className="h-3 w-48" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-10 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

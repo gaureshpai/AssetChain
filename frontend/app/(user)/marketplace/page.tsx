@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Listing, ListingStatus, MarketplaceListing } from "@/lib/contract-types";
 import { ethers } from "ethers";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 export default function MarketplacePage() {
   const { user } = useAuth();
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
@@ -82,17 +84,23 @@ export default function MarketplacePage() {
       <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <div className="h-8 w-48 rounded bg-muted" />
-            <div className="mt-2 h-4 w-64 rounded bg-muted" />
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="border bg-card rounded-lg p-6">
-                <div className="h-6 w-56 rounded bg-muted mb-2" />
-                <div className="h-4 w-80 rounded bg-muted mb-4" />
-                <div className="h-4 w-full rounded bg-muted" />
-                <div className="mt-4 h-9 w-28 rounded bg-muted" />
-              </div>
+              <Card key={i}>
+                <CardHeader>
+                  <Skeleton className="h-6 w-56 mb-2" />
+                  <Skeleton className="h-4 w-80" />
+                </CardHeader>
+                <CardContent>
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-2" />
+                  <Skeleton className="h-4 w-full mb-4" />
+                  <Skeleton className="h-9 w-28" />
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -153,6 +161,7 @@ export default function MarketplacePage() {
                           <Input
                             id={`amount-to-buy-${listing.listingId}`}
                             type="number"
+                            placeholder={`1-${listing.amount}`}
                             value={amountToBuy[listing.listingId] || ""}
                             onChange={(e) =>
                               setAmountToBuy((prev) => ({

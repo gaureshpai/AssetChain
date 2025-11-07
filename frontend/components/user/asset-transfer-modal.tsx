@@ -26,7 +26,7 @@ export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFracti
   const [transferAmount, setTransferAmount] = useState(10);
   const [isTransferring, setIsTransferring] = useState(false);
 
-  const [isListingMode, setIsListingMode] = useState(false);
+  const [isListingMode, setIsListingMode] = useState(true);
   const [listAmount, setListAmount] = useState(10);
   const [pricePerShare, setPricePerShare] = useState(10);
   const [isListing, setIsListing] = useState(false);
@@ -114,12 +114,12 @@ export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFracti
           <Button size="sm" variant="secondary">List to Marketplace</Button>
         </div>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px] bg-slate-800 text-white border-slate-700">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-white">
+          <DialogTitle>
             {isListingMode ? "List Asset for Sale" : "Transfer Asset"}
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription>
             {isListingMode
               ? `List your fractional ownership of ${ownedNFT.propertyName} on the marketplace.`
               : `Transfer your fractional ownership of ${ownedNFT.propertyName} to another user.`}
@@ -130,9 +130,8 @@ export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFracti
             id="listing-mode"
             checked={isListingMode}
             onCheckedChange={setIsListingMode}
-            className="data-[state=checked]:bg-blue-600"
           />
-          <Label htmlFor="listing-mode" className="text-slate-300">
+          <Label htmlFor="listing-mode">
             List to Marketplace
           </Label>
         </div>
@@ -140,29 +139,31 @@ export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFracti
           {isListingMode ? (
             <>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="list-amount" className="text-right text-slate-300">
+                <Label htmlFor="list-amount" className="text-right">
                   Amount to List
                 </Label>
                 <Input
                   id="list-amount"
                   type="number"
+                  placeholder={`e.g., 10 (max: ${ownedNFT.balance})`}
                   value={listAmount}
                   onChange={(e) => setListAmount(Number(e.target.value))}
-                  className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+                  className="col-span-3"
                   min="0"
                   max={ownedNFT.balance}
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="price-per-share" className="text-right text-slate-300">
+                <Label htmlFor="price-per-share" className="text-right">
                   Price per Share (ETH)
                 </Label>
                 <Input
                   id="price-per-share"
                   type="number"
+                  placeholder="e.g., 0.01"
                   value={pricePerShare}
                   onChange={(e) => setPricePerShare(Number(e.target.value))}
-                  className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+                  className="col-span-3"
                   min="0"
                 />
               </div>
@@ -170,41 +171,43 @@ export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFracti
           ) : (
             <>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="recipient" className="text-right text-slate-300">
+                <Label htmlFor="recipient" className="text-right">
                   Recipient Address
                 </Label>
                 <Input
                   id="recipient"
+                  placeholder="0x..."
                   value={recipientAddress}
                   onChange={(e) => setRecipientAddress(e.target.value)}
-                  className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+                  className="col-span-3"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="transfer-amount" className="text-right text-slate-300">
+                <Label htmlFor="transfer-amount" className="text-right">
                   Amount
                 </Label>
                 <Input
                   id="transfer-amount"
                   type="number"
+                  placeholder={`e.g., 5 (max: ${ownedNFT.balance})`}
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(Number(e.target.value))}
-                  className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+                  className="col-span-3"
                   min="0"
                   max={ownedNFT.balance}
                 />
               </div>
             </>
           )}
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
         </div>
         <DialogFooter>
           {isListingMode ? (
-            <Button type="button" onClick={handleListForSale} disabled={isListing} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="button" onClick={handleListForSale} disabled={isListing}>
               {isListing ? "Listing..." : "List for Sale"}
             </Button>
           ) : (
-            <Button type="button" onClick={handleTransfer} disabled={isTransferring} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button type="button" onClick={handleTransfer} disabled={isTransferring}>
               {isTransferring ? "Transferring..." : "Transfer"}
             </Button>
           )}

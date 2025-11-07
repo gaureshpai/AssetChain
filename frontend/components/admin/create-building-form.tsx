@@ -177,9 +177,9 @@ export default function CreateBuildingForm() {
 
 
   return (
-    <Card className="border-slate-700 bg-slate-800/50 backdrop-blur-lg">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-white">Create New Tokenized Asset</CardTitle>
+        <CardTitle>Create New Tokenized Asset</CardTitle>
         <CardDescription>
           Register a building and create its digital token representation
         </CardDescription>
@@ -187,9 +187,9 @@ export default function CreateBuildingForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {success && (
-            <Alert className="border-green-500/50 bg-green-500/10">
-              <FileCheck className="h-4 w-4 text-green-500" />
-              <AlertDescription className="text-green-400">
+            <Alert variant="default">
+              <FileCheck className="h-4 w-4" />
+              <AlertDescription>
                 Building asset created successfully! Token created and pending
                 approval.
               </AlertDescription>
@@ -197,20 +197,20 @@ export default function CreateBuildingForm() {
           ) && toast.success("Building asset created successfully! Token created and pending approval.")}
 
           {errorMsg && (
-            <Alert className="border-red-500/50 bg-red-500/10">
-              <AlertCircle className="h-4 w-4 text-red-500" />
-              <AlertDescription className="text-red-400">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
                 {errorMsg}
               </AlertDescription>
             </Alert>
           )}
 
           {/* Asset Information */}
-          <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-            <h3 className="text-white font-semibold">Asset Information</h3>
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+            <h3 className="font-semibold">Asset Information</h3>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-foreground">
                 Building Name *
               </label>
               <Input
@@ -219,7 +219,6 @@ export default function CreateBuildingForm() {
                 placeholder="e.g., Downtown Office Complex"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="bg-slate-700/50 border-slate-600 text-white"
                 required
               />
             </div>
@@ -227,12 +226,12 @@ export default function CreateBuildingForm() {
             </div>
 
             {/* Owners and Percentages */}
-            <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-              <h3 className="text-white font-semibold">Owners and Percentages (Total must be 100%)</h3>
+            <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+              <h3 className="font-semibold">Owners and Percentages (Total must be 100%)</h3>
               {owners.map((owner, index) => (
                 <div key={index} className="flex items-end gap-2">
                   <div className="flex-grow space-y-2">
-                    <label className="text-sm font-medium text-slate-200">
+                    <label className="text-sm font-medium text-foreground">
                       Owner {index + 1} Wallet Address *
                     </label>
                     <Input
@@ -242,12 +241,12 @@ export default function CreateBuildingForm() {
                       onChange={(e) =>
                         handleOwnerChange(index, "address", e.target.value)
                       }
-                      className="bg-slate-700/50 border-slate-600 text-white font-mono text-xs"
+                      className="font-mono text-xs"
                       required
                     />
                   </div>
                   <div className="w-24 space-y-2">
-                    <label className="text-sm font-medium text-slate-200">
+                    <label className="text-sm font-medium text-foreground">
                       Percentage (%) *
                     </label>
                     <Input
@@ -259,7 +258,6 @@ export default function CreateBuildingForm() {
                       onChange={(e) =>
                         handleOwnerChange(index, "percentage", Number(e.target.value) * 100)
                       }
-                      className="bg-slate-700/50 border-slate-600 text-white"
                       required
                     />
                   </div>
@@ -275,21 +273,21 @@ export default function CreateBuildingForm() {
                   )}
                 </div>
               ))}
-              <Button type="button" onClick={addOwner} className="w-full bg-slate-600 hover:bg-slate-500 text-white">
+              <Button type="button" onClick={addOwner} variant="secondary" className="w-full">
                 Add Another Owner
               </Button>
-              <p className="text-sm text-slate-400 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 Total Percentage: {owners.reduce((sum, owner) => sum + owner.percentage, 0) / 100}%
               </p>
             </div>
 
             {/* Document Uploads */}
-          <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-            <h3 className="text-white font-semibold">Required Documents</h3>
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+            <h3 className="font-semibold">Required Documents</h3>
 
             {/* Partnership Agreement */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-foreground">
                 Partnership Agreement *
               </label>
               <div className="relative">
@@ -300,9 +298,9 @@ export default function CreateBuildingForm() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   // required
                 />
-                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
-                  <Upload className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg bg-input hover:bg-accent transition-colors">
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     {files.partnershipAgreement
                       ? files.partnershipAgreement.name
                       : "Upload partnership agreement"}
@@ -313,7 +311,7 @@ export default function CreateBuildingForm() {
 
             {/* Maintenance Agreement */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-foreground">
                 Maintenance Agreement *
               </label>
               <div className="relative">
@@ -324,9 +322,9 @@ export default function CreateBuildingForm() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   // required
                 />
-                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
-                  <Upload className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg bg-input hover:bg-accent transition-colors">
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     {files.maintenanceAgreement
                       ? files.maintenanceAgreement.name
                       : "Upload maintenance agreement"}
@@ -337,7 +335,7 @@ export default function CreateBuildingForm() {
 
             {/* Rent Agreement */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-foreground">
                 Rent Agreement *
               </label>
               <div className="relative">
@@ -348,9 +346,9 @@ export default function CreateBuildingForm() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   // required
                 />
-                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
-                  <Upload className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg bg-input hover:bg-accent transition-colors">
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     {files.rentAgreement
                       ? files.rentAgreement.name
                       : "Upload rent agreement"}
@@ -361,10 +359,10 @@ export default function CreateBuildingForm() {
           </div>
 
           {/* Image Upload */}
-          <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
-            <h3 className="text-white font-semibold">Property Image</h3>
+          <div className="space-y-4 p-4 rounded-lg border bg-muted/20">
+            <h3 className="font-semibold">Property Image</h3>
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200">
+              <label className="text-sm font-medium text-foreground">
                 Upload Property Image *
               </label>
               <div className="relative">
@@ -375,9 +373,9 @@ export default function CreateBuildingForm() {
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   required
                 />
-                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
-                  <Upload className="w-4 h-4 text-slate-400" />
-                  <span className="text-sm text-slate-300">
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg bg-input hover:bg-accent transition-colors">
+                  <Upload className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
                     {files.imageFile ? files.imageFile.name : "Upload property image"}
                   </span>
                 </div>
@@ -387,7 +385,7 @@ export default function CreateBuildingForm() {
 
           <Button
             type="submit"
-            className="w-full bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold h-12 rounded-lg transition-all"
+            className="w-full h-12 rounded-lg"
             disabled={uploading}
           >
             {uploading ? "Uploading..." : "Create Asset Token"}
