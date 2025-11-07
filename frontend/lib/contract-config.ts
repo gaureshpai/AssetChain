@@ -7,11 +7,11 @@ export const CONTRACT_CONFIG = {
   // Network configuration - matches hardhat.config.ts
   network: {
     localhost: {
-      url: "http://127.0.0.1:7546",
+      url: "http://172.21.3.24:7545",
       chainId: 1337,
     },
     hardhat: {
-      url: "http://127.0.0.1:8545",
+      url: "http://172.21.3.24:7545",
       chainId: 31337,
     },
   },

@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, FileCheck, AlertCircle, Trash2 } from "lucide-react";
-import type { BuildingAsset } from "@/lib/asset-data";
+import { uploadFileToAzure } from "@/lib/azure-blob-storage";
 
 interface FileUpload {
   partnershipAgreement: File | null;
@@ -37,6 +37,7 @@ export default function CreateBuildingForm() {
   });
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -84,15 +85,7 @@ export default function CreateBuildingForm() {
     setFormData((prev) => ({ ...prev, owners: newOwners }));
   };
 
-  const generateTokenId = () => {
-    return `TOKEN-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-  };
-
-  const generateBuildingId = () => {
-    return `BLD-${Date.now()}`;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccess(false);
@@ -116,34 +109,49 @@ export default function CreateBuildingForm() {
       return;
     }
 
-    // if (
-    //   !files.partnershipAgreement ||
-    //   !files.maintenanceAgreement ||
-    //   !files.rentAgreement
-    // ) {
-    //   setErrorMsg("Please upload all required documents");
-    //   return;
-    // }
+    if (
+      !files.partnershipAgreement ||
+      !files.maintenanceAgreement ||
+      !files.rentAgreement
+    ) {
+      setErrorMsg("Please upload all required documents");
+      return;
+    }
+
+    setUploading(true);
 
     try {
-      (async()=>{
-        const ownerAddresses = formData.owners.map(owner => owner.address);
-        const ownerShares = formData.owners.map(owner => owner.percentage);
-        await registerPropertyOnBlockchain(formData.name, ownerAddresses, ownerShares);
-        setSuccess(true);
-        setFormData({
-          name: "",
-          location: "",
-          owners: [{ address: "", percentage: 100 }],
-        });
-        setFiles({
-          partnershipAgreement: null,
-          maintenanceAgreement: null,
-          rentAgreement: null,
-        });
-      })()
+      const partnershipAgreementUrl = await uploadFileToAzure(files.partnershipAgreement);
+      const maintenanceAgreementUrl = await uploadFileToAzure(files.maintenanceAgreement);
+      const rentAgreementUrl = await uploadFileToAzure(files.rentAgreement);
+
+      const ownerAddresses = formData.owners.map((owner) => owner.address);
+      const ownerShares = formData.owners.map((owner) => owner.percentage);
+
+      await registerPropertyOnBlockchain(
+        formData.name,
+        ownerAddresses,
+        ownerShares,
+        partnershipAgreementUrl,
+        maintenanceAgreementUrl,
+        rentAgreementUrl
+      );
+
+      setSuccess(true);
+      setFormData({
+        name: "",
+        location: "",
+        owners: [{ address: "", percentage: 100 }],
+      });
+      setFiles({
+        partnershipAgreement: null,
+        maintenanceAgreement: null,
+        rentAgreement: null,
+      });
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to register property on blockchain.");
+    } finally {
+      setUploading(false);
     }
 
     setTimeout(() => setSuccess(false), 5000);

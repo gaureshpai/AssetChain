@@ -9,12 +9,18 @@ export interface PropertyData {
   id: number;
   name: string;
   ownersCount: number;
+  partnershipAgreementUrl: string;
+  maintenanceAgreementUrl: string;
+  rentAgreementUrl: string;
 }
 
 export interface PropertyDetails {
   id: number;
   name: string;
   owners: PropertyOwner[];
+  partnershipAgreementUrl: string;
+  maintenanceAgreementUrl: string;
+  rentAgreementUrl: string;
 }
 
 // Event types
@@ -41,6 +47,9 @@ export interface RegisterPropertyParams {
   name: string;
   owners: string[];
   shares: number[];
+  partnershipAgreementUrl: string;
+  maintenanceAgreementUrl: string;
+  rentAgreementUrl: string;
 }
 
 export interface TransferShareParams {
