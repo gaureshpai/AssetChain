@@ -1,6 +1,4 @@
 import React from "react";
-import type { Metadata } from "next";
-import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import UserNav from "@/components/user/user-nav";
 
@@ -15,13 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          <UserNav />
-          {children}
-        </AuthProvider>
-      </body>
-    </html>
+    <>
+      <UserNav />
+      {children}
+    </>
   );
 }

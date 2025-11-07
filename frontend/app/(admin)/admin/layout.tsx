@@ -49,7 +49,7 @@ export default function AdminLayout({
           <Button
             onClick={handleLogout}
             size="sm"
-            className="border-slate-600 bg-black/30 hover:bg-black/40 text-white"
+            className="border-slate-600 bg-white hover:bg-white/40 text-black"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Logout
