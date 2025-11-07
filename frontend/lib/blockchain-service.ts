@@ -109,7 +109,7 @@ class BlockchainService {
   async getProperty(propertyId: number): Promise<PropertyData | null> {
     if (!this.contract) await this.initialize();
     try {
-      const [id, name, ownersCount, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl] = await this.contract!.getProperty(propertyId);
+      const [id, name, ownersCount, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl, imageUrl] = await this.contract!.getProperty(propertyId);
       return {
         id: Number(id),
         name: name,
@@ -117,6 +117,7 @@ class BlockchainService {
         partnershipAgreementUrl,
         maintenanceAgreementUrl,
         rentAgreementUrl,
+        imageUrl,
       };
     } catch (error) {
       console.error(`Failed to get property ${propertyId}:`, error);
@@ -156,6 +157,7 @@ class BlockchainService {
       partnershipAgreementUrl: property.partnershipAgreementUrl,
       maintenanceAgreementUrl: property.maintenanceAgreementUrl,
       rentAgreementUrl: property.rentAgreementUrl,
+      imageUrl: property.imageUrl,
     };
   }
 
@@ -191,7 +193,8 @@ class BlockchainService {
         params.shares,
         params.partnershipAgreementUrl,
         params.maintenanceAgreementUrl,
-        params.rentAgreementUrl
+        params.rentAgreementUrl,
+        params.imageUrl
       );
       const receipt = await tx.wait();
       console.log("Property registered:", receipt);

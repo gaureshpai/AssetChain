@@ -12,6 +12,7 @@ export interface PropertyData {
   partnershipAgreementUrl: string;
   maintenanceAgreementUrl: string;
   rentAgreementUrl: string;
+  imageUrl: string;
 }
 
 export interface PropertyDetails {
@@ -21,6 +22,7 @@ export interface PropertyDetails {
   partnershipAgreementUrl: string;
   maintenanceAgreementUrl: string;
   rentAgreementUrl: string;
+  imageUrl: string;
 }
 
 // Event types
@@ -50,6 +52,7 @@ export interface RegisterPropertyParams {
   partnershipAgreementUrl: string;
   maintenanceAgreementUrl: string;
   rentAgreementUrl: string;
+  imageUrl: string;
 }
 
 export interface TransferShareParams {

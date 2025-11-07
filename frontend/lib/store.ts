@@ -22,7 +22,7 @@ interface AssetStore {
   getRequests: () => TokenRequest[];
   // Blockchain methods
   loadPropertiesFromBlockchain: (userAddress?: string) => Promise<void>;
-  registerPropertyOnBlockchain: (name: string, owners: string[], shares: number[], partnershipAgreementUrl: string, maintenanceAgreementUrl: string, rentAgreementUrl: string) => Promise<void>;
+  registerPropertyOnBlockchain: (name: string, owners: string[], shares: number[], partnershipAgreementUrl: string, maintenanceAgreementUrl: string, rentAgreementUrl: string, imageUrl: string) => Promise<void>;
   transferFullOwnership: (params: { propertyId: number; to: string }) => Promise<void>;
 }
 
@@ -38,6 +38,7 @@ function propertyToBuilding(property: PropertyDetails, index: number): BuildingA
       partnershipAgreement: property.partnershipAgreementUrl,
       maintenanceAgreement: property.maintenanceAgreementUrl,
       rentAgreement: property.rentAgreementUrl,
+      imageUrl: property.imageUrl,
     },
     createdAt: new Date().toISOString(),
     status: "approved" as const,
@@ -129,10 +130,10 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
   },
 
   // Register a new property on blockchain
-  registerPropertyOnBlockchain: async (name: string, owners: string[], shares: number[], partnershipAgreementUrl: string, maintenanceAgreementUrl: string, rentAgreementUrl: string) => {
+  registerPropertyOnBlockchain: async (name: string, owners: string[], shares: number[], partnershipAgreementUrl: string, maintenanceAgreementUrl: string, rentAgreementUrl: string, imageUrl: string) => {
     set({ isLoadingBlockchain: true, blockchainError: null });
     try {
-      await blockchainService.registerProperty({ name, owners, shares, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl });
+      await blockchainService.registerProperty({ name, owners, shares, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl, imageUrl });
       
       // Reload all properties after registration
       await get().loadPropertiesFromBlockchain();

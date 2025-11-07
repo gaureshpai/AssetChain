@@ -21,6 +21,7 @@ interface FileUpload {
   partnershipAgreement: File | null;
   maintenanceAgreement: File | null;
   rentAgreement: File | null;
+  imageFile: File | null;
 }
 
 export default function CreateBuildingForm() {
@@ -34,6 +35,7 @@ export default function CreateBuildingForm() {
     partnershipAgreement: null,
     maintenanceAgreement: null,
     rentAgreement: null,
+    imageFile: null,
   });
   const [success, setSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -112,9 +114,10 @@ export default function CreateBuildingForm() {
     if (
       !files.partnershipAgreement ||
       !files.maintenanceAgreement ||
-      !files.rentAgreement
+      !files.rentAgreement ||
+      !files.imageFile
     ) {
-      setErrorMsg("Please upload all required documents");
+      setErrorMsg("Please upload all required documents and an image");
       return;
     }
 
@@ -124,6 +127,7 @@ export default function CreateBuildingForm() {
       const partnershipAgreementUrl = await uploadFileToAzure(files.partnershipAgreement);
       const maintenanceAgreementUrl = await uploadFileToAzure(files.maintenanceAgreement);
       const rentAgreementUrl = await uploadFileToAzure(files.rentAgreement);
+      const imageUrl = await uploadFileToAzure(files.imageFile);
 
       const ownerAddresses = formData.owners.map((owner) => owner.address);
       const ownerShares = formData.owners.map((owner) => owner.percentage);
@@ -134,7 +138,8 @@ export default function CreateBuildingForm() {
         ownerShares,
         partnershipAgreementUrl,
         maintenanceAgreementUrl,
-        rentAgreementUrl
+        rentAgreementUrl,
+        imageUrl
       );
 
       setSuccess(true);
@@ -147,6 +152,7 @@ export default function CreateBuildingForm() {
         partnershipAgreement: null,
         maintenanceAgreement: null,
         rentAgreement: null,
+        imageFile: null,
       });
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to register property on blockchain.");
@@ -352,11 +358,37 @@ export default function CreateBuildingForm() {
             </div>
           </div>
 
+          {/* Image Upload */}
+          <div className="space-y-4 bg-slate-700/30 p-4 rounded-lg border border-slate-600">
+            <h3 className="text-white font-semibold">Property Image</h3>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-200">
+                Upload Property Image *
+              </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif"
+                  onChange={(e) => handleFileUpload(e, "imageFile")}
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required
+                />
+                <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
+                  <Upload className="w-4 h-4 text-slate-400" />
+                  <span className="text-sm text-slate-300">
+                    {files.imageFile ? files.imageFile.name : "Upload property image"}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <Button
             type="submit"
             className="w-full bg-linear-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold h-12 rounded-lg transition-all"
+            disabled={uploading}
           >
-            Create Asset Token
+            {uploading ? "Uploading..." : "Create Asset Token"}
           </Button>
         </form>
       </CardContent>

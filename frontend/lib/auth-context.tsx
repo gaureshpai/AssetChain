@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const ADMIN_PASSWORD = "admin@123";
   const ADMIN_PRIVATE_KEY =
-    "0xac0974bec39a17e36ba4a6b4d238ff944bac478cbed5ef2744c09d1a3775f892"; // Example private key for admin
+    "0x98349cc99a83d31eda6e941707709d51c456473f7940fdc34487bee5496cde08"; // Example private key for admin
 
   useEffect(() => {
     // Check if admin was previously logged in
