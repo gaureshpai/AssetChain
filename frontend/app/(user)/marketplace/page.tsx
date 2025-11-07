@@ -12,6 +12,8 @@ import { Listing, ListingStatus, MarketplaceListing } from "@/lib/contract-types
 import { ethers } from "ethers";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { sha256 } from "@/lib/hash-utils";
+import { addIdMapping } from "@/lib/id-mapper";
 
 import Link from "next/link";
 
@@ -22,6 +24,8 @@ export default function MarketplacePage() {
   const [error, setError] = useState<string | null>(null);
   const [amountToBuy, setAmountToBuy] = useState<{ [key: number]: number }>({});
   const [isBuying, setIsBuying] = useState<{ [key: number]: boolean }>({});
+  const [renderedListings, setRenderedListings] = useState<Array<MarketplaceListing & { originalListingIds: number[]; hashedPropertyId: string }>>([]);
+
 
   const fetchListings = async () => {
     setLoading(true);
@@ -68,6 +72,23 @@ export default function MarketplacePage() {
   useEffect(() => {
     fetchListings();
   }, []);
+
+  useEffect(() => {
+    const processListings = async () => {
+      const hashedListings = await Promise.all(displayListings.map(async (listing) => {
+        const hashedId = await sha256(listing.propertyId.toString());
+        addIdMapping(hashedId, listing.propertyId);
+        return { ...listing, hashedPropertyId: hashedId };
+      }));
+      setRenderedListings(hashedListings);
+    };
+
+    if (displayListings.length > 0) {
+      processListings();
+    } else {
+      setRenderedListings([]);
+    }
+  }, [displayListings]);
 
   const handleBuy = async (e: React.MouseEvent, listing: MarketplaceListing) => {
     e.stopPropagation(); // Prevent navigation
@@ -152,7 +173,7 @@ export default function MarketplacePage() {
           <p className="text-muted-foreground text-sm">Browse fractional tokens of approved properties</p>
         </div>
 
-        {displayListings.length === 0 ? (
+        {renderedListings.length === 0 ? (
           <Card>
             <CardContent className="pt-12 text-center">
               <p className="text-muted-foreground">No active listings found.</p>
@@ -160,8 +181,8 @@ export default function MarketplacePage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {displayListings.map((listing) => (
-              <Link key={listing.listingId} href={`/marketplace/${listing.propertyId}`} className="block">
+            {renderedListings.map((listing,index) => (
+              <Link key={listing.hashedPropertyId+index} href={`/marketplace/${listing.hashedPropertyId}`} className="block">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                   <CardHeader className="flex-row items-center gap-4">
                     {listing.imageUrl && (

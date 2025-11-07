@@ -35,12 +35,6 @@ export default function UserNav() {
               <Store className="h-4 w-4" />
               Marketplace
             </Link>
-            {user.role === "admin" && (
-              <Link href="/admin" className="hover:text-foreground flex items-center gap-1">
-                <ShieldCheck className="h-4 w-4" />
-                Admin
-              </Link>
-            )}
           </nav>
         </div>
         <div className="flex items-center gap-3">

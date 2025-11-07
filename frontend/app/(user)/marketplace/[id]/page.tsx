@@ -12,6 +12,7 @@ import { AlertCircle, Link as LinkIcon, Building2, DollarSign, Layers, Scale } f
 import Link from "next/link";
 import { ethers, Interface, Log } from "ethers";
 import { CONTRACT_CONFIG } from "@/lib/contract-config";
+import { getOriginalId } from "@/lib/id-mapper"; // Import the ID mapper
 
 interface TransactionLog {
   blockNumber: number;
@@ -23,30 +24,47 @@ interface TransactionLog {
 
 export default function MarketplaceDetailPage() {
   const params = useParams();
-  const propertyId = Number(params.id);
+  const hashedPropertyId = params.id as string; // Get the hashed ID from the URL
 
   const [property, setProperty] = useState<PropertyDetails | null>(null);
   const [fractionalNFT, setFractionalNFT] = useState<FractionalNFTDetails | null>(null);
   const [transactions, setTransactions] = useState<TransactionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [originalPropertyId, setOriginalPropertyId] = useState<number | null>(null); // New state for original ID
 
   useEffect(() => {
+    // Resolve the hashed ID to the original integer ID
+    const resolvedId = getOriginalId(hashedPropertyId);
+    if (resolvedId === undefined) {
+      // Handle case where mapping is not found (e.g., direct access or page refresh)
+      // For now, we'll set an error. A more robust solution might involve re-fetching all properties
+      // and rebuilding the map, or redirecting to the main marketplace page.
+      setError("Invalid property ID or mapping not found. Please navigate from the marketplace page.");
+      setLoading(false);
+      return;
+    }
+    setOriginalPropertyId(resolvedId);
+  }, [hashedPropertyId]);
+
+  useEffect(() => {
+    if (originalPropertyId === null) return; // Wait until originalPropertyId is resolved
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
         await blockchainService.initialize();
 
-        // Fetch property details
-        const propertyDetails = await blockchainService.getProperty(propertyId);
+        // Fetch property details using the originalPropertyId
+        const propertyDetails = await blockchainService.getProperty(originalPropertyId);
         if (!propertyDetails) {
           throw new Error("Property not found.");
         }
         setProperty(propertyDetails);
 
         // Fetch fractional NFT details
-        const fractionalNFTDetails = await blockchainService.getFractionalNFTDetails(propertyId);
+        const fractionalNFTDetails = await blockchainService.getFractionalNFTDetails(originalPropertyId);
         setFractionalNFT(fractionalNFTDetails);
 
         // Fetch transaction history for this property
@@ -68,7 +86,7 @@ export default function MarketplaceDetailPage() {
           address: prAddr,
           topics: [
             ethers.id("PropertyRegistered(uint256,string,address)"),
-            ethers.zeroPadValue(ethers.toBeHex(propertyId), 32)
+            ethers.zeroPadValue(ethers.toBeHex(originalPropertyId), 32)
           ],
           fromBlock,
           toBlock: latest
@@ -77,7 +95,7 @@ export default function MarketplaceDetailPage() {
           address: prAddr,
           topics: [
             ethers.id("PropertyFractionalized(uint256,address)"),
-            ethers.zeroPadValue(ethers.toBeHex(propertyId), 32)
+            ethers.zeroPadValue(ethers.toBeHex(originalPropertyId), 32)
           ],
           fromBlock,
           toBlock: latest
@@ -87,7 +105,7 @@ export default function MarketplaceDetailPage() {
           topics: [
             ethers.id("NFTListedForSale(uint256,uint256,address,address,uint256,uint256)"),
             null, // Any listingId
-            ethers.zeroPadValue(ethers.toBeHex(propertyId), 32) // Filter by propertyId
+            ethers.zeroPadValue(ethers.toBeHex(originalPropertyId), 32) // Filter by propertyId
           ],
           fromBlock,
           toBlock: latest
@@ -97,7 +115,7 @@ export default function MarketplaceDetailPage() {
           topics: [
             ethers.id("NFTPurchased(uint256,uint256,address,uint256,uint256)"),
             null, // Any listingId
-            ethers.zeroPadValue(ethers.toBeHex(propertyId), 32) // Filter by propertyId
+            ethers.zeroPadValue(ethers.toBeHex(originalPropertyId), 32) // Filter by propertyId
           ],
           fromBlock,
           toBlock: latest
@@ -107,7 +125,7 @@ export default function MarketplaceDetailPage() {
           topics: [
             ethers.id("PropertyRequestApproved(uint256,uint256)"),
             null, // Any requestId
-            ethers.zeroPadValue(ethers.toBeHex(propertyId), 32) // Filter by propertyId
+            ethers.zeroPadValue(ethers.toBeHex(originalPropertyId), 32) // Filter by propertyId
           ],
           fromBlock,
           toBlock: latest
@@ -176,7 +194,7 @@ export default function MarketplaceDetailPage() {
     };
 
     fetchData();
-  }, [propertyId]);
+  }, [originalPropertyId]); // Depend on originalPropertyId
 
   if (loading) {
     return (
@@ -187,7 +205,6 @@ export default function MarketplaceDetailPage() {
             <Skeleton className="h-[40vh] w-full" />
             <div className="space-y-4">
               <Skeleton className="h-6 w-1/2" />
-              <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
@@ -293,7 +310,7 @@ export default function MarketplaceDetailPage() {
         </div>
 
         {/* Transaction History */}
-        <h2 className="text-2xl font-bold mt-8 mb-4">Transaction History</h2>
+        <h2 className="2xl font-bold mt-8 mb-4">Transaction History</h2>
         {transactions.length === 0 ? (
           <Card>
             <CardContent className="pt-6 text-center text-muted-foreground">
@@ -301,9 +318,10 @@ export default function MarketplaceDetailPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div>
             {transactions.map((tx, index) => (
-              <Card key={index}>
+              <>
+              <Card key={index+tx.txHash}>
                 <CardHeader>
                   <CardTitle className="text-lg">{tx.event}</CardTitle>
                   <CardDescription>Block: {tx.blockNumber} | Tx Hash: <Link href={`https://etherscan.io/tx/${tx.txHash}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline break-all">{tx.txHash}</Link></CardDescription>
@@ -315,6 +333,14 @@ export default function MarketplaceDetailPage() {
                   )}</p>
                 </CardContent>
               </Card>
+              {index < transactions.length - 1 && (
+                <div className="flex justify-center">
+                  <div className="w-0.5 h-16 bg-gray-300 dark:bg-gray-700 relative">
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
+                  </div>
+                </div>
+              )}
+              </>
             ))}
           </div>
         )}
