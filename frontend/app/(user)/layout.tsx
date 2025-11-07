@@ -1,7 +1,6 @@
 import React from "react";
-import type { Metadata } from "next";
-import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import UserNav from "@/components/user/user-nav";
 
 export const metadata = {
   title: "undefined",
@@ -14,12 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-      </body>
-    </html>
+    <>
+      <UserNav />
+      {children}
+    </>
   );
 }

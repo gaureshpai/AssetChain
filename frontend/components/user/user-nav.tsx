@@ -27,7 +27,7 @@ export default function UserNav() {
           {user.isConnected ? (
             <>
               <span className="text-xs text-slate-400 font-mono hidden sm:block">{short(user.address)}</span>
-              <Button size="sm" variant="outline" className="border-slate-700 text-slate-200" onClick={logout}>
+              <Button size="sm" variant="outline" className="border-slate-700 text-black hover:text-slate-700" onClick={logout}>
                 Logout
               </Button>
             </>

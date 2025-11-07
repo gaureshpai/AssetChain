@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, FileCheck, AlertCircle } from "lucide-react";
 import { uploadFileToAzure } from "@/lib/azure-blob-storage";
+import {toast} from "sonner";
 
 interface FileUpload {
   partnershipAgreement: File | null;
@@ -110,6 +111,7 @@ export default function CreateBuildingForm() {
       });
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to register property on blockchain.");
+      toast.error(err.message || "Failed to register property on blockchain.");
     }
     finally {
       setUploading(false);
@@ -137,7 +139,7 @@ export default function CreateBuildingForm() {
                 approval.
               </AlertDescription>
             </Alert>
-          )}
+          ) && toast.success("Building asset created successfully! Token created and pending approval.")}
 
           {errorMsg && (
             <Alert className="border-red-500/50 bg-red-500/10">

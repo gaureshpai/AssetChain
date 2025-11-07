@@ -61,11 +61,36 @@ export default function BuildingsList() {
 
   if (isLoading) {
     return (
-      <Card className="border-slate-700 bg-slate-800/50 backdrop-blur-lg">
-        <CardContent className="pt-12 text-center">
-          <p className="text-slate-400">Loading buildings...</p>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <Card key={i} className="border-slate-700 bg-slate-800/50 backdrop-blur-lg">
+            <CardHeader>
+              <CardTitle className="text-white">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-slate-700/60" />
+                  <div className="h-5 w-48 rounded bg-slate-700/60" />
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <div className="h-3 w-20 rounded bg-slate-700/60" />
+                  <div className="h-4 w-64 rounded bg-slate-700/60" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-24 rounded bg-slate-700/60" />
+                  <div className="h-4 w-40 rounded bg-slate-700/60" />
+                </div>
+                <div className="space-y-2">
+                  <div className="h-3 w-16 rounded bg-slate-700/60" />
+                  <div className="h-4 w-32 rounded bg-slate-700/60" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     );
   }
 
