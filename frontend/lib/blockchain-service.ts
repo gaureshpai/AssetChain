@@ -1,4 +1,4 @@
-import { ethers, Contract, Signer, Wallet } from "ethers";
+import { ethers, Contract, Signer, Wallet, BrowserProvider, JsonRpcProvider } from "ethers";
 import PropertyRegistryArtifact from "../contracts/PropertyRegistry.json";
 import { CONTRACT_CONFIG, getRpcUrl } from "./contract-config";
 import type {
@@ -12,8 +12,14 @@ import type {
 
 
 
+declare global {
+  interface Window {
+    ethereum?: any; // MetaMask injects window.ethereum
+  }
+}
+
 class BlockchainService {
-  private provider: ethers.JsonRpcProvider | null = null;
+  private provider: ethers.Provider | null = null;
   private contract: Contract | null = null;
   private signer: Signer | null = null;
 
@@ -26,13 +32,21 @@ class BlockchainService {
       // Request account access
       await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-      this.provider = new ethers.BrowserProvider(window.ethereum);
-      this.signer = await this.provider.getSigner();
-      this.contract = new Contract(
-        CONTRACT_CONFIG.address,
-        PropertyRegistryArtifact.abi,
-        this.signer
-      );
+            const browserProvider: ethers.BrowserProvider = new ethers.BrowserProvider(window.ethereum);
+
+            // this.provider = browserProvider; // Assign to the more general type
+
+            // Now, we know this.provider is a BrowserProvider, so we can safely get the signer
+            this.signer = await browserProvider.getSigner(); // Line 36
+            if (!this.signer) {
+                throw new Error("Could not get a signer from BrowserProvider.");
+            }
+
+            this.contract = new Contract(
+              CONTRACT_CONFIG.address,
+              PropertyRegistryArtifact.abi,
+              this.signer
+            );
       return await this.signer.getAddress();
     } catch (error) {
       console.error("Failed to connect to MetaMask:", error);

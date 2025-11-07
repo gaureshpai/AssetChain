@@ -48,7 +48,7 @@ export default function Home() {
     }
     const ADMIN_PRIVATE_KEY = "0x82189d8341245824960d24eea73ab1f905bae1f7d14e58da71e285456cbac4bd"; // Example private key for admin
     try {
-      const success = adminLogin(adminPassword)
+      const success = await adminLogin(adminPassword)
       if (success) {
         await loginWithPrivateKey(ADMIN_PRIVATE_KEY, "admin")
         router.push("/admin")

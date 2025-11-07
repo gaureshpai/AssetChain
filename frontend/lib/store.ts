@@ -7,6 +7,7 @@ import {
 } from "./asset-data";
 import { blockchainService } from "./blockchain-service";
 import type { PropertyDetails } from "./contract-types";
+import { toast } from "sonner";
 
 interface AssetStore {
   buildings: BuildingAsset[];
@@ -20,9 +21,9 @@ interface AssetStore {
   getBuildings: () => BuildingAsset[];
   getRequests: () => TokenRequest[];
   // Blockchain methods
-  loadPropertiesFromBlockchain: () => Promise<void>;
+  loadPropertiesFromBlockchain: (userAddress?: string) => Promise<void>;
   registerPropertyOnBlockchain: (name: string, owners: string[], shares: number[]) => Promise<void>;
-  syncWithBlockchain: () => Promise<void>;
+  transferFullOwnership: (params: { propertyId: number; to: string }) => Promise<void>;
 }
 
 // Helper to convert blockchain property to BuildingAsset
@@ -97,7 +98,7 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
       const blockchainBuildings = allBlockchainBuildings
         .filter(building => {
           if (!userAddress) return true; // If no userAddress, show all
-          const isOwner = building.fractionalOwnership.some(owner => {
+          const isOwner = building?.fractionalOwnership?.some(owner => {
             const match = owner.address.toLowerCase() === userAddress.toLowerCase();
             if (match) {
               console.log(`Match found for building ${building.id}: owner ${owner.address} === user ${userAddress}`);
@@ -148,5 +149,24 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
   // Sync with blockchain - refresh data
   syncWithBlockchain: async () => {
     await get().loadPropertiesFromBlockchain();
+  },
+
+  // Transfer full ownership of a property
+  transferFullOwnership: async (params: { propertyId: number; to: string }) => {
+    set({ isLoadingBlockchain: true, blockchainError: null });
+    try {
+      await blockchainService.transferFullOwnership(params);
+      toast.success("Ownership transfer initiated successfully!");
+      await get().loadPropertiesFromBlockchain(get().user?.address); // Refresh data for current user
+    } catch (error: any) {
+      console.error("Failed to transfer full ownership:", error);
+      set({
+        blockchainError: error.message || "Failed to transfer ownership",
+        isLoadingBlockchain: false,
+      });
+      throw error;
+    } finally {
+      set({ isLoadingBlockchain: false });
+    }
   },
 }));

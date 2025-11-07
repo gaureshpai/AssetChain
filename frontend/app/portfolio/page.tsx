@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { LogOut, TrendingUp, Building2, Wallet, FileCheck } from "lucide-react"
 import { useEffect, useState } from "react"
+import AssetTransferModal from "@/components/user/asset-transfer-modal";
+import { BuildingAsset } from "@/lib/asset-data"
 
 interface OwnershipData {
   totalAssets: number
@@ -24,6 +26,8 @@ export default function PortfolioDashboard() {
   const { buildings } = useAssetStore()
   const [ownershipData, setOwnershipData] = useState<OwnershipData | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [selectedAssetForTransfer, setSelectedAssetForTransfer] = useState<BuildingAsset | null>(null);
 
   useEffect(() => {
     setMounted(true)
@@ -38,7 +42,7 @@ export default function PortfolioDashboard() {
     // Load properties from blockchain on mount
     const loadBlockchainData = async () => {
       const { loadPropertiesFromBlockchain } = useAssetStore.getState();
-      await loadPropertiesFromBlockchain();
+      await loadPropertiesFromBlockchain(user.address);
     };
 
     loadBlockchainData();
@@ -69,6 +73,19 @@ export default function PortfolioDashboard() {
   const handleLogout = async () => {
     await logout();
     router.push("/");
+  };
+
+  const handleOpenTransferModal = (asset: BuildingAsset) => {
+    setSelectedAssetForTransfer(asset);
+    setShowTransferModal(true);
+  };
+
+  const handleCloseTransferModal = () => {
+    setShowTransferModal(false);
+    setSelectedAssetForTransfer(null);
+    // Optionally, refresh the portfolio data after a transfer attempt
+    const { loadPropertiesFromBlockchain } = useAssetStore.getState();
+    loadPropertiesFromBlockchain(user.address);
   };
 
   if (!mounted || !ownershipData) {
@@ -163,44 +180,51 @@ export default function PortfolioDashboard() {
 
           {ownershipData.fractionalOwnership.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {ownershipData.fractionalOwnership.map((holding, index) => (
-                <Card
-                  key={index}
-                  className="border-gray-700 bg-gray-800/60 backdrop-blur-lg hover:border-gray-600 transition-colors shadow-md hover:shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-white">{holding.buildingName}</CardTitle>
-                        <CardDescription className="text-gray-400">Token: {holding.tokenId}</CardDescription>
+              {ownershipData.fractionalOwnership.map((holding, index) => {
+                // Find the full BuildingAsset object from the 'buildings' array
+                const fullAsset = buildings.find(b => b.tokenId === holding.tokenId);
+                if (!fullAsset) return null; // Should not happen if data is consistent
+
+                return (
+                  <Card
+                    key={index}
+                    className="border-gray-700 bg-gray-800/60 backdrop-blur-lg hover:border-gray-600 transition-colors shadow-md hover:shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 cursor-pointer"
+                    onClick={() => handleOpenTransferModal(fullAsset)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-white">{holding.buildingName}</CardTitle>
+                          <CardDescription className="text-gray-400">Token: {holding.tokenId}</CardDescription>
+                        </div>
+                        <FileCheck className="w-5 h-5 text-green-500" />
                       </div>
-                      <FileCheck className="w-5 h-5 text-green-500" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-gray-400 mb-1">Ownership Stake</p>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-linear-to-r from-blue-600 to-indigo-600 h-full rounded-full"
-                              style={{ width: `${holding.percentage}%` }}
-                            ></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Ownership Stake</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 bg-gray-700 rounded-full h-2">
+                              <div
+                                className="bg-linear-to-r from-blue-600 to-indigo-600 h-full rounded-full"
+                                style={{ width: `${holding.percentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-bold text-white">{holding.percentage}%</span>
                           </div>
-                          <span className="text-sm font-bold text-white">{holding.percentage}%</span>
+                        </div>
+                        <div className="pt-2 border-t border-gray-700">
+                          <p className="text-xs text-gray-500">
+                            You own <span className="text-white font-semibold">{holding.percentage}%</span> of this
+                            property
+                          </p>
                         </div>
                       </div>
-                      <div className="pt-2 border-t border-gray-700">
-                        <p className="text-xs text-gray-500">
-                          You own <span className="text-white font-semibold">{holding.percentage}%</span> of this
-                          property
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card className="border-gray-700 bg-gray-800/60 backdrop-blur-lg shadow-lg shadow-blue-500/10">
@@ -212,6 +236,12 @@ export default function PortfolioDashboard() {
             </Card>
           )}
         </div>
+
+        <AssetTransferModal
+          isOpen={showTransferModal}
+          onClose={handleCloseTransferModal}
+          asset={selectedAssetForTransfer}
+        />
       </div>
     </div>
   )
