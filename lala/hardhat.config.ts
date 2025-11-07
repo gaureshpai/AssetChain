@@ -14,10 +14,10 @@ const config: HardhatUserConfig = {
   },
   networks: {
     localhost: {
-      url: "http://127.0.0.1:7546",
+      url: "http://127.0.0.1:7545",
       chainId: 1337,
       accounts: [
-        "0x007fba38fd0edf930d176b4ba9a05c9fed0409d1ec41a6aa982f2fc0f313831e"
+        "0xbdec6811985ef657770531c6d95d9ddad07ae4718d63cb78d5a3dd1fa02ba895"
       ],
     },
     hardhat: {
