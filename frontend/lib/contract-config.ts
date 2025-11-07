@@ -2,7 +2,7 @@
 export const CONTRACT_CONFIG = {
   // Update this address after deploying the contract
   // You can get this from the deployment script output
-  address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0xb4210da958474c648F75d0E170521FCe947a6075",
+  address: process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x181b270c2E5Ee12a3E9E049b88b0426d2381ae56",
   
   // Network configuration - matches hardhat.config.ts
   network: {

@@ -32,8 +32,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const ADMIN_PASSWORD = "admin@123";
-  const ADMIN_PRIVATE_KEY = "0xf8b98fce5591dbd31542ccc955fb76e9c6aec9a4e66c3230a91ff5b436c6c6a0"; // Example private key for admin
+  const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || "admin@123";
+  const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY || "0xbdec6811985ef657770531c6d95d9ddad07ae4718d63cb78d5a3dd1fa02ba895"; // Example private key for admin
 
   useEffect(() => {
     // Check if admin was previously logged in
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const adminLogin = async (password: string): Promise<boolean> => {
     if (password === ADMIN_PASSWORD) {
       // For admin, we'll assume a predefined private key for local development
-      const ADMIN_PRIVATE_KEY = "0xcbbf8ac155841ea450c8da715255f14b6f386433d5fe4e9b1cd8cd48576e4d1f"; // Example private key
+      const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY ||"0xbdec6811985ef657770531c6d95d9ddad07ae4718d63cb78d5a3dd1fa02ba895"; // Example private key
       await loginWithPrivateKey(ADMIN_PRIVATE_KEY, "admin");
       localStorage.setItem("isAdmin", "true");
       return true;
