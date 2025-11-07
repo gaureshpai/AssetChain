@@ -54,7 +54,7 @@ export default function Home() {
       setAdminError("Please enter the admin password.");
       return;
     }
-    const ADMIN_PRIVATE_KEY = "0xde6ea022157f9fe8d2f4b1aff42ea0d7aa44e0c6d814119546d8fd0e2ff4ae49"; // Example private key for admin
+    const ADMIN_PRIVATE_KEY = "0x32e796ffc858b0a72f3638a244c8d8cd1d37b7a5f936d419e3a879f943551519"; // Example private key for admin
     try {
       const success = await adminLogin(adminPassword);
       if (success) {

@@ -3,10 +3,46 @@
 import { useAssetStore } from "@/lib/store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Building2, MapPin, User } from "lucide-react"
+import { Building2, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 
 export default function BuildingsList() {
-  const { buildings } = useAssetStore()
+  const { buildings, fractionalizeNFT } = useAssetStore()
+  const [isFractionalizeModalOpen, setIsFractionalizeModalOpen] = useState(false);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [fractionalTokenName, setFractionalTokenName] = useState<string>("");
+  const [fractionalTokenSymbol, setFractionalTokenSymbol] = useState<string>("");
+  const [fractionalTokenSupply, setFractionalTokenSupply] = useState<number>(1000);
+
+  const handleFractionalizeClick = (propertyId: number) => {
+    setSelectedPropertyId(propertyId);
+    setIsFractionalizeModalOpen(true);
+  };
+
+  const handleFractionalizeSubmit = async () => {
+    if (selectedPropertyId === null) return;
+    if (!fractionalTokenName || !fractionalTokenSymbol || fractionalTokenSupply <= 0) {
+      alert("Please fill all fractionalization details.");
+      return;
+    }
+
+    try {
+      await fractionalizeNFT(selectedPropertyId, fractionalTokenName, fractionalTokenSymbol, fractionalTokenSupply);
+      alert("NFT fractionalized successfully!");
+      setIsFractionalizeModalOpen(false);
+      setSelectedPropertyId(null);
+      setFractionalTokenName("");
+      setFractionalTokenSymbol("");
+      setFractionalTokenSupply(1000);
+    } catch (error) {
+      console.error("Failed to fractionalize NFT:", error);
+      alert("Failed to fractionalize NFT.");
+    }
+  };
 
   if (buildings.length === 0) {
     return (
@@ -35,69 +71,96 @@ export default function BuildingsList() {
                   {building.name}
                 </CardTitle>
                 <CardDescription className="text-slate-400 flex items-center gap-1 mt-1">
-                  <MapPin className="w-4 h-4" />
-                  {building.location}
+                  Token ID: {building.id}
                 </CardDescription>
               </div>
               <Badge
-                variant={
-                  building.status === "approved"
-                    ? "default"
-                    : building.status === "rejected"
-                      ? "destructive"
-                      : "secondary"
-                }
-                className={
-                  building.status === "approved"
-                    ? "bg-green-500/20 text-green-400 border-green-500/30"
-                    : building.status === "rejected"
-                      ? "bg-red-500/20 text-red-400 border-red-500/30"
-                      : "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
-                }
+                variant="default"
+                className="bg-green-500/20 text-green-400 border-green-500/30"
               >
-                {building.status}
+                NFT Property
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-xs text-slate-500 mb-1">Token ID</p>
-                <p className="text-sm font-mono text-slate-300">{building.tokenId}</p>
-              </div>
-              <div>
                 <p className="text-xs text-slate-500 mb-1">Owner</p>
                 <p className="text-sm font-mono text-slate-300 truncate">{building.owner.slice(0, 8)}...</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">Created</p>
-                <p className="text-sm text-slate-300">{new Date(building.createdAt).toLocaleDateString()}</p>
+                <p className="text-xs text-slate-500 mb-1">Partnership Agreement</p>
+                <a href={building.partnershipAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">View Document</a>
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-1">Documents</p>
-                <p className="text-sm text-slate-300">3 attached</p>
+                <p className="text-xs text-slate-500 mb-1">Maintenance Agreement</p>
+                <a href={building.maintenanceAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">View Document</a>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 mb-1">Rent Agreement</p>
+                <a href={building.rentAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-400 hover:underline">View Document</a>
               </div>
             </div>
-
-            {building.fractionalOwnership && building.fractionalOwnership.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-slate-700">
-                <p className="text-xs text-slate-500 mb-2">Ownership Structure</p>
-                <div className="space-y-2">
-                  {building.fractionalOwnership.map((owner:any, idx:number) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2">
-                        <User className="w-3 h-3 text-slate-500" />
-                        <span className="font-mono text-slate-400 truncate">{owner.address.slice(0, 12)}...</span>
-                      </div>
-                      <span className="text-slate-300 font-semibold">{owner.percentage}%</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <div className="mt-4">
+              <Button onClick={() => handleFractionalizeClick(building.id)} className="bg-purple-600 hover:bg-purple-700 text-white">
+                Fractionalize NFT
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ))}
+
+      <Dialog open={isFractionalizeModalOpen} onOpenChange={setIsFractionalizeModalOpen}>
+        <DialogContent className="sm:max-w-[425px] bg-slate-800 text-white border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Fractionalize NFT</DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Enter details for the fractional tokens.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tokenName" className="text-right text-slate-300">
+                Token Name
+              </Label>
+              <Input
+                id="tokenName"
+                value={fractionalTokenName}
+                onChange={(e) => setFractionalTokenName(e.target.value)}
+                className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tokenSymbol" className="text-right text-slate-300">
+                Token Symbol
+              </Label>
+              <Input
+                id="tokenSymbol"
+                value={fractionalTokenSymbol}
+                onChange={(e) => setFractionalTokenSymbol(e.target.value)}
+                className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="totalSupply" className="text-right text-slate-300">
+                Total Supply
+              </Label>
+              <Input
+                id="totalSupply"
+                type="number"
+                value={fractionalTokenSupply}
+                onChange={(e) => setFractionalTokenSupply(Number(e.target.value))}
+                className="col-span-3 bg-slate-700/50 border-slate-600 text-white"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={handleFractionalizeSubmit} className="bg-purple-600 hover:bg-purple-700 text-white">
+              Fractionalize
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

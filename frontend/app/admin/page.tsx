@@ -5,17 +5,16 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { LogOut, SquarePlus, List, CheckCircle2 } from "lucide-react"
+import { LogOut, SquarePlus, List } from "lucide-react"
 import CreateBuildingForm from "@/components/admin/create-building-form"
 import BuildingsList from "@/components/admin/buildings-list"
-import EnhancedRequestsList from "@/components/admin/enhanced-requests-list"
 
 import { useAssetStore } from "@/lib/store";
 
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, logout } = useAuth()
-  const { loadPropertiesFromBlockchain, loadMediatedTransferProposals } = useAssetStore()
+  const { loadPropertiesFromBlockchain } = useAssetStore()
   const [activeTab, setActiveTab] = useState("buildings")
 
   useEffect(() => {
@@ -23,13 +22,12 @@ export default function AdminDashboard() {
       if (user.role === "admin") {
         console.log("Admin user connected, loading all properties.");
         loadPropertiesFromBlockchain(); // Admin sees all properties
-        loadMediatedTransferProposals(); // Load mediated transfer proposals
       } else {
         console.log("Loading properties for user address:", user.address);
         loadPropertiesFromBlockchain(user.address); // Regular user sees only their properties
       }
     }
-  }, [user, loadPropertiesFromBlockchain, loadMediatedTransferProposals]);
+  }, [user, loadPropertiesFromBlockchain]);
 
   useEffect(() => {
     if (!user.isConnected || user.role !== "admin") {
@@ -53,7 +51,7 @@ export default function AdminDashboard() {
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-linear-to-br from-amber-600 to-orange-600 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-white" />
+              <List className="w-5 h-5 text-white" />
             </div>
             <div>
               <h1 className="text-white font-bold">AssetChain Admin</h1>
@@ -70,7 +68,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-slate-700/50 mb-8">
+          <TabsList className="grid w-full grid-cols-2 bg-slate-700/50 mb-8">
             <TabsTrigger value="buildings" className="data-[state=active]:bg-amber-600 text-white data-[state=active]:text-black flex items-center gap-2  transition-all duration-200">
               <SquarePlus className="w-4 h-4" />
               Create Building
@@ -79,11 +77,6 @@ export default function AdminDashboard() {
               <List className="w-4 h-4" />
               Buildings
             </TabsTrigger>
-            <TabsTrigger value="requests" className="data-[state=active]:bg-amber-600 text-white data-[state=active]:text-black flex items-center gap-2  transition-all duration-200">
-              <CheckCircle2 className="w-4 h-4" />
-              Requests
-            </TabsTrigger>
-            
           </TabsList>
 
           {/* Create Building Tab */}
@@ -103,17 +96,6 @@ export default function AdminDashboard() {
             </div>
             <BuildingsList />
           </TabsContent>
-
-          {/* Requests Tab */}
-          <TabsContent value="requests" className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white">Pending Requests</h2>
-              <p className="text-slate-400 text-sm">Review and approve/reject tokenization requests</p>
-            </div>
-            <EnhancedRequestsList />
-          </TabsContent>
-
-          
         </Tabs>
       </div>
     </div>
