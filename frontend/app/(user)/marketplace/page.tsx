@@ -79,19 +79,19 @@ export default function MarketplacePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white">
+      <div className="min-h-screen">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="mb-6">
-            <div className="h-8 w-48 rounded bg-slate-700/60" />
-            <div className="mt-2 h-4 w-64 rounded bg-slate-800/60" />
+            <div className="h-8 w-48 rounded bg-muted" />
+            <div className="mt-2 h-4 w-64 rounded bg-muted" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="border border-slate-700 bg-slate-800/50 backdrop-blur-lg rounded-lg p-6">
-                <div className="h-6 w-56 rounded bg-slate-700/60 mb-2" />
-                <div className="h-4 w-80 rounded bg-slate-700/60 mb-4" />
-                <div className="h-4 w-full rounded bg-slate-700/60" />
-                <div className="mt-4 h-9 w-28 rounded bg-slate-700/60" />
+              <div key={i} className="border bg-card rounded-lg p-6">
+                <div className="h-6 w-56 rounded bg-muted mb-2" />
+                <div className="h-4 w-80 rounded bg-muted mb-4" />
+                <div className="h-4 w-full rounded bg-muted" />
+                <div className="mt-4 h-9 w-28 rounded bg-muted" />
               </div>
             ))}
           </div>
@@ -102,44 +102,44 @@ export default function MarketplacePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-900 text-red-400 flex items-center justify-center">
+      <div className="min-h-screen text-destructive flex items-center justify-center">
         {error}
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-bold">Marketplace</h1>
-          <p className="text-slate-400 text-sm">Browse fractional tokens of approved properties</p>
+          <p className="text-muted-foreground text-sm">Browse fractional tokens of approved properties</p>
         </div>
 
         {listings.length === 0 ? (
-          <Card className="border-slate-700 bg-slate-800/50 backdrop-blur-lg">
+          <Card>
             <CardContent className="pt-12 text-center">
-              <p className="text-slate-400">No active listings found.</p>
+              <p className="text-muted-foreground">No active listings found.</p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {listings.map((listing) => (
-              <Card key={listing.listingId} className="border-slate-700 bg-slate-800/60 backdrop-blur-lg">
+              <Card key={listing.listingId}>
                 <CardHeader>
-                  <CardTitle className="text-white">{listing.propertyName}</CardTitle>
-                  <CardDescription className="text-slate-400">
+                  <CardTitle>{listing.propertyName}</CardTitle>
+                  <CardDescription>
                     Listed by: {listing.seller}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-foreground">
                     Amount: {listing.amount} shares
                   </p>
-                  <p className="text-sm text-slate-300">
+                  <p className="text-sm text-foreground">
                     Price per share: {listing.pricePerShare} ETH
                   </p>
-                  <p className="text-sm text-slate-300 font-mono break-all mt-2">
+                  <p className="text-sm text-muted-foreground font-mono break-all mt-2">
                     Fractional NFT: {listing.fractionalNFTAddress}
                   </p>
 
@@ -147,7 +147,7 @@ export default function MarketplacePage() {
                     listing.seller.toLowerCase() !== user.address?.toLowerCase() ? (
                       <div className="mt-4 space-y-2">
                         <div className="grid grid-cols-3 items-center gap-4">
-                          <Label htmlFor={`amount-to-buy-${listing.listingId}`} className="text-right text-slate-300">
+                          <Label htmlFor={`amount-to-buy-${listing.listingId}`} className="text-right text-foreground">
                             Buy Amount
                           </Label>
                           <Input
@@ -160,7 +160,6 @@ export default function MarketplacePage() {
                                 [listing.listingId]: Number(e.target.value),
                               }))
                             }
-                            className="col-span-2 bg-slate-700/50 border-slate-600 text-white"
                             min="1"
                             max={listing.amount}
                           />
@@ -168,16 +167,16 @@ export default function MarketplacePage() {
                         <Button
                           onClick={() => handleBuy(listing)}
                           disabled={isBuying[listing.listingId]}
-                          className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          className="w-full"
                         >
                           {isBuying[listing.listingId] ? "Buying..." : "Buy Shares"}
                         </Button>
                       </div>
                     ) : (
-                      <p className="text-sm text-slate-500 mt-4">You own this listing.</p>
+                      <p className="text-sm text-muted-foreground mt-4">You own this listing.</p>
                     )
                   ) : (
-                    <p className="text-xs text-slate-500 mt-4">Connect/sign in to buy</p>
+                    <p className="text-xs text-muted-foreground mt-4">Connect/sign in to buy</p>
                   )}
                 </CardContent>
               </Card>

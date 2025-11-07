@@ -23,12 +23,12 @@ import { ethers } from "ethers";
 export default function AssetTransferModal({ ownedNFT }: { ownedNFT: OwnedFractionalNFT }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [recipientAddress, setRecipientAddress] = useState("");
-  const [transferAmount, setTransferAmount] = useState(0);
+  const [transferAmount, setTransferAmount] = useState(10);
   const [isTransferring, setIsTransferring] = useState(false);
 
   const [isListingMode, setIsListingMode] = useState(false);
-  const [listAmount, setListAmount] = useState(0);
-  const [pricePerShare, setPricePerShare] = useState(0);
+  const [listAmount, setListAmount] = useState(10);
+  const [pricePerShare, setPricePerShare] = useState(10);
   const [isListing, setIsListing] = useState(false);
 
   const [error, setError] = useState("");
