@@ -5,21 +5,53 @@ import {
   mockBuildings,
   mockRequests,
 } from "./asset-data";
+import { blockchainService } from "./blockchain-service";
+import type { PropertyDetails } from "./contract-types";
 
 interface AssetStore {
   buildings: BuildingAsset[];
   requests: TokenRequest[];
+  isLoadingBlockchain: boolean;
+  blockchainError: string | null;
   addBuilding: (building: BuildingAsset) => void;
   updateBuildingStatus: (id: string, status: "approved" | "rejected") => void;
   addRequest: (request: TokenRequest) => void;
   updateRequestStatus: (id: string, status: "approved" | "rejected") => void;
   getBuildings: () => BuildingAsset[];
   getRequests: () => TokenRequest[];
+  // Blockchain methods
+  loadPropertiesFromBlockchain: () => Promise<void>;
+  registerPropertyOnBlockchain: (name: string, owners: string[], shares: number[]) => Promise<void>;
+  syncWithBlockchain: () => Promise<void>;
+}
+
+// Helper to convert blockchain property to BuildingAsset
+function propertyToBuilding(property: PropertyDetails, index: number): BuildingAsset {
+  return {
+    id: `bld-${property.id.toString().padStart(3, '0')}`,
+    name: property.name,
+    location: "On-chain Property", // Could be stored in property name or separate mapping
+    owner: property.owners[0]?.wallet || "0x0000000000000000000000000000000000000000",
+    tokenId: `TOKEN-${property.id.toString().padStart(3, '0')}`,
+    files: {
+      partnershipAgreement: "on-chain-metadata",
+      maintenanceAgreement: "on-chain-metadata",
+      rentAgreement: "on-chain-metadata",
+    },
+    createdAt: new Date().toISOString(),
+    status: "approved" as const,
+    fractionalOwnership: property.owners.map(owner => ({
+      address: owner.wallet,
+      percentage: owner.percentage,
+    })),
+  };
 }
 
 export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
   buildings: mockBuildings,
   requests: mockRequests,
+  isLoadingBlockchain: false,
+  blockchainError: null,
 
   addBuilding: (building: BuildingAsset) => {
     set((state: AssetStore) => ({
@@ -49,4 +81,72 @@ export const useAssetStore = create<AssetStore>((set: any, get: any) => ({
 
   getBuildings: () => get().buildings,
   getRequests: () => get().requests,
+
+  // Load properties from blockchain
+  loadPropertiesFromBlockchain: async (userAddress?: string) => {
+    set({ isLoadingBlockchain: true, blockchainError: null });
+    console.log("loadPropertiesFromBlockchain called with userAddress:", userAddress);
+    try {
+      await blockchainService.initialize();
+      const properties = await blockchainService.getAllProperties();
+      console.log("Fetched all properties from blockchain:", properties);
+      
+      const allBlockchainBuildings = properties.map((prop, idx) => propertyToBuilding(prop, idx));
+      console.log("All blockchain buildings (before filtering):", allBlockchainBuildings);
+
+      const blockchainBuildings = allBlockchainBuildings
+        .filter(building => {
+          if (!userAddress) return true; // If no userAddress, show all
+          const isOwner = building.fractionalOwnership.some(owner => {
+            const match = owner.address.toLowerCase() === userAddress.toLowerCase();
+            if (match) {
+              console.log(`Match found for building ${building.id}: owner ${owner.address} === user ${userAddress}`);
+            }
+            return match;
+          });
+          if (!isOwner) {
+            console.log(`Building ${building.id} not owned by user ${userAddress}`);
+          }
+          return isOwner;
+        });
+      
+      console.log("Filtered blockchain buildings (after filtering):", blockchainBuildings);
+      
+      set({
+        buildings: blockchainBuildings,
+        isLoadingBlockchain: false,
+      });
+    } catch (error: any) {
+      console.error("Failed to load properties from blockchain:", error);
+      set({
+        blockchainError: error.message || "Failed to load blockchain data",
+        isLoadingBlockchain: false,
+        // Keep mock data if blockchain fails
+        buildings: mockBuildings,
+      });
+    }
+  },
+
+  // Register a new property on blockchain
+  registerPropertyOnBlockchain: async (name: string, owners: string[], shares: number[]) => {
+    set({ isLoadingBlockchain: true, blockchainError: null });
+    try {
+      await blockchainService.registerProperty({ name, owners, shares });
+      
+      // Reload all properties after registration
+      await get().loadPropertiesFromBlockchain();
+    } catch (error: any) {
+      console.error("Failed to register property on blockchain:", error);
+      set({
+        blockchainError: error.message || "Failed to register property",
+        isLoadingBlockchain: false,
+      });
+      throw error;
+    }
+  },
+
+  // Sync with blockchain - refresh data
+  syncWithBlockchain: async () => {
+    await get().loadPropertiesFromBlockchain();
+  },
 }));

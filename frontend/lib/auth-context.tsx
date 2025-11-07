@@ -6,8 +6,8 @@ import {
   useContext,
   useState,
   useEffect,
-  useCallback,
 } from "react";
+import { blockchainService } from "./blockchain-service";
 
 interface User {
   address?: string;
@@ -17,9 +17,10 @@ interface User {
 
 interface AuthContextType {
   user: User;
+  loginWithPrivateKey: (privateKey: string, role: "user" | "admin") => Promise<void>;
+  adminLogin: (password: string) => Promise<boolean>;
+  logout: () => void;
   loginWithMetaMask: () => Promise<void>;
-  adminLogin: (password: string) => boolean;
-  logout: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -33,92 +34,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  // Admin password (in production, use proper authentication)
   const ADMIN_PASSWORD = "admin@123";
-
-  const checkMetaMaskConnection = useCallback(async () => {
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      try {
-        const accounts = await (window as any).ethereum.request({
-          method: "eth_accounts",
-        });
-        if (accounts.length > 0) {
-          setUser({
-            address: accounts[0],
-            role: "user",
-            isConnected: true,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to check MetaMask connection:", error);
-      }
-    }
-  }, []);
+  const ADMIN_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bac478cbed5ef2744c09d1a3775f892"; // Example private key for admin
 
   useEffect(() => {
-    // Check if user was previously connected
-    checkMetaMaskConnection();
-
     // Check if admin was previously logged in
-    const isAdmin = localStorage.getItem("isAdmin");
-    if (isAdmin === "true") {
-      setUser({
-        address: "admin",
-        role: "admin",
-        isConnected: true,
-      });
+    if (typeof window !== 'undefined') {
+      const isAdmin = localStorage.getItem("isAdmin");
+      if (isAdmin === "true") {
+        // Re-login with private key to get the actual address
+        loginWithPrivateKey(ADMIN_PRIVATE_KEY, "admin");
+      }
     }
   }, []);
 
-  const loginWithMetaMask = async () => {
-    if (typeof window === "undefined" || !(window as any).ethereum) {
-      alert("Please install MetaMask");
-      return;
-    }
-
+  const loginWithPrivateKey = async (privateKey: string, role: "user" | "admin") => {
     setIsLoading(true);
     try {
-      const accounts = await (window as any).ethereum.request({
-        method: "eth_requestAccounts",
+      const address = await blockchainService.initialize(privateKey);
+      setUser({
+        address: address,
+        role: role,
+        isConnected: true,
       });
-
-      if (accounts.length > 0) {
-        setUser({
-          address: accounts[0],
-          role: "user",
-          isConnected: true,
-        });
+      if (role === "admin") {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem("isAdmin", "true");
+        }
       }
     } catch (error) {
-      console.error("MetaMask login failed:", error);
-      alert("Failed to connect MetaMask");
+      console.error(`${role} login failed:`, error);
+      alert(`Failed to connect to local blockchain network with provided private key.`);
+      throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const adminLogin = (password: string): boolean => {
+
+
+  const adminLogin = async(password: string): Promise<boolean> => {
     if (password === ADMIN_PASSWORD) {
-      setUser({
-        address: "admin",
-        role: "admin",
-        isConnected: true,
-      });
+      // For admin, we'll assume a predefined private key for local development
+      const ADMIN_PRIVATE_KEY = "0x82189d8341245824960d24eea73ab1f905bae1f7d14e58da71e285456cbac4bd"; // Example private key
+      await loginWithPrivateKey(ADMIN_PRIVATE_KEY, "admin");
       localStorage.setItem("isAdmin", "true");
       return true;
     }
     return false;
   };
 
-  const logout = async () => {
-    try {
-      await (window as any).ethereum.request({
-        method: "wallet_revokePermissions",
-        params: [{ eth_accounts: {} }],
-      });
-    } catch (error) {
-      console.error("Failed to disconnect MetaMask:", error);
-    }
+  const logout = () => {
     localStorage.removeItem("isAdmin");
     setUser({
       address: undefined,
@@ -127,9 +93,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const loginWithMetaMask = async () => {
+    setIsLoading(true);
+    try {
+      const address = await blockchainService.connectMetaMask();
+      setUser({
+        address: address,
+        role: "user", // Default to user role for MetaMask login
+        isConnected: true,
+      });
+    } catch (error) {
+      console.error("MetaMask login failed:", error);
+      alert(`Failed to connect to MetaMask: ${error}`);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
-      value={{ user, loginWithMetaMask, adminLogin, logout, isLoading }}
+      value={{ user, loginWithPrivateKey, adminLogin, logout, loginWithMetaMask, isLoading }}
     >
       {children}
     </AuthContext.Provider>

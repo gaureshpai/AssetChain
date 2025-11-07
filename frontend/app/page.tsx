@@ -7,14 +7,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, Wallet, Lock } from "lucide-react"
+import { AlertCircle, Lock } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function Home() {
   const router = useRouter()
-  const { user, loginWithMetaMask, adminLogin, isLoading } = useAuth()
+  const { user, loginWithPrivateKey, adminLogin, isLoading } = useAuth()
   const [adminPassword, setAdminPassword] = useState("")
   const [adminError, setAdminError] = useState("")
+  const [userPrivateKey, setUserPrivateKey] = useState("")
+  const [userError, setUserError] = useState("")
   const [activeTab, setActiveTab] = useState("user")
 
   useEffect(() => {
@@ -23,24 +25,46 @@ export default function Home() {
     }
   }, [user, router])
 
-  const handleMetaMaskLogin = async () => {
-    await loginWithMetaMask()
+  const handleUserLogin = async () => {
+    setUserError("")
+    if (!userPrivateKey) {
+      setUserError("Please enter your private key.")
+      return
+    }
+    try {
+      await loginWithPrivateKey(userPrivateKey, "user")
+      router.push("/portfolio")
+    } catch (error) {
+      setUserError("Login failed. Please check your private key and try again.")
+      setUserPrivateKey("")
+    }
   }
 
-  const handleAdminLogin = () => {
+  const handleAdminLogin = async () => {
     setAdminError("")
-    const success = adminLogin(adminPassword)
-    if (success) {
-      router.push("/admin")
-    } else {
-      setAdminError("Invalid password. Please try again.")
+    if (!adminPassword) {
+      setAdminError("Please enter the admin password.")
+      return
+    }
+    const ADMIN_PRIVATE_KEY = "0x82189d8341245824960d24eea73ab1f905bae1f7d14e58da71e285456cbac4bd"; // Example private key for admin
+    try {
+      const success = adminLogin(adminPassword)
+      if (success) {
+        await loginWithPrivateKey(ADMIN_PRIVATE_KEY, "admin")
+        router.push("/admin")
+      } else {
+        setAdminError("Invalid password. Please try again.")
+        setAdminPassword("")
+      }
+    } catch (error) {
+      setAdminError("Admin login failed. Please check your password and try again.")
       setAdminPassword("")
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black opacity-50"></div>
+      <div className="absolute inset-0 bg-linear-to-br from-gray-900 via-gray-800 to-black opacity-50"></div>
       <div className="absolute inset-0 bg-[url('/noise.png')] opacity-5"></div>
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
@@ -53,7 +77,7 @@ export default function Home() {
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className="w-12 h-12 rounded-lg bg-linear-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-              <Wallet className="w-6 h-6 text-white" />
+              <Lock className="w-6 h-6 text-white" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">AssetChain</h1>
@@ -81,11 +105,37 @@ export default function Home() {
               <TabsContent value="user" className="space-y-4 mt-6">
                 <div className="space-y-4">
                   <p className="text-sm text-slate-400 text-center mb-4">
-                    Connect your MetaMask wallet to access your portfolio
+                    Enter your private key to access your portfolio
                   </p>
 
+                  {userError && (
+                    <Alert className="border-red-500/50 bg-red-500/10">
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                      <AlertDescription className="text-red-400">{userError}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-200">Private Key</label>
+                    <Input
+                      type="password"
+                      placeholder="Enter your private key (e.g., 0x...)"
+                      value={userPrivateKey}
+                      onChange={(e) => {
+                        setUserPrivateKey(e.target.value)
+                        setUserError("")
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          handleUserLogin()
+                        }
+                      }}
+                      className="bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-500 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+
                   <Button
-                    onClick={handleMetaMaskLogin}
+                    onClick={handleUserLogin}
                     disabled={isLoading}
                     size="lg"
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold h-12 rounded-lg transition-all shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30"
@@ -97,15 +147,15 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2">
-                        <Wallet className="w-6 h-6" />
-                        <span>Connect MetaMask</span>
+                        <Lock className="w-6 h-6" />
+                        <span>Login with Private Key</span>
                       </div>
                     )}
                   </Button>
 
                   <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
                     <p className="text-xs text-blue-400">
-                      💡 Make sure you have MetaMask installed and a valid Ethereum wallet to proceed.
+                      💡 For local development, you can use private keys from your Hardhat node (e.g., `npx hardhat node`).
                     </p>
                   </div>
                 </div>

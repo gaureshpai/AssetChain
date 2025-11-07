@@ -30,12 +30,24 @@ export default function PortfolioDashboard() {
   }, [])
 
   useEffect(() => {
-    if (!user.isConnected || user.role === "admin") {
+    if (!user.isConnected) {
       router.push("/")
       return
     }
 
-    // Calculate user's ownership portfolio
+    // Load properties from blockchain on mount
+    const loadBlockchainData = async () => {
+      const { loadPropertiesFromBlockchain } = useAssetStore.getState();
+      await loadPropertiesFromBlockchain();
+    };
+
+    loadBlockchainData();
+  }, [user, router])
+
+  useEffect(() => {
+    if (!user.isConnected) return;
+
+    // Calculate user's ownership portfolio from blockchain data
     const userAssets = buildings
       .filter((b:any) => b.status === "approved" && b.fractionalOwnership?.some((o:any) => o.address === user.address))
       .map((b:any) => {
@@ -52,7 +64,7 @@ export default function PortfolioDashboard() {
       totalValue: `$${(Math.random() * 1000000 + 500000).toLocaleString("en-US", { maximumFractionDigits: 0 })}`,
       fractionalOwnership: userAssets,
     })
-  }, [user, buildings, router])
+  }, [user, buildings])
 
   const handleLogout = async () => {
     await logout();

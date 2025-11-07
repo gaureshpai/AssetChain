@@ -24,7 +24,7 @@ interface FileUpload {
 }
 
 export default function CreateBuildingForm() {
-  const { addBuilding } = useAssetStore();
+  const { registerPropertyOnBlockchain } = useAssetStore();
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -116,47 +116,35 @@ export default function CreateBuildingForm() {
       return;
     }
 
-    if (
-      !files.partnershipAgreement ||
-      !files.maintenanceAgreement ||
-      !files.rentAgreement
-    ) {
-      setErrorMsg("Please upload all required documents");
-      return;
+    // if (
+    //   !files.partnershipAgreement ||
+    //   !files.maintenanceAgreement ||
+    //   !files.rentAgreement
+    // ) {
+    //   setErrorMsg("Please upload all required documents");
+    //   return;
+    // }
+
+    try {
+      (async()=>{
+        const ownerAddresses = formData.owners.map(owner => owner.address);
+        const ownerShares = formData.owners.map(owner => owner.percentage);
+        await registerPropertyOnBlockchain(formData.name, ownerAddresses, ownerShares);
+        setSuccess(true);
+        setFormData({
+          name: "",
+          location: "",
+          owners: [{ address: "", percentage: 100 }],
+        });
+        setFiles({
+          partnershipAgreement: null,
+          maintenanceAgreement: null,
+          rentAgreement: null,
+        });
+      })()
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to register property on blockchain.");
     }
-
-    // Create new building asset
-    const newBuilding: BuildingAsset = {
-      id: generateBuildingId(),
-      name: formData.name,
-      location: formData.location,
-      owner: formData.owners[0].address, // Keep the first owner as the main owner for now
-      tokenId: generateTokenId(),
-      files: {
-        partnershipAgreement: files.partnershipAgreement.name,
-        maintenanceAgreement: files.maintenanceAgreement.name,
-        rentAgreement: files.rentAgreement.name,
-      },
-      createdAt: new Date().toISOString(),
-      status: "pending",
-      fractionalOwnership: formData.owners.map((owner) => ({
-        address: owner.address,
-        percentage: Number(owner.percentage),
-      })),
-    };
-
-    addBuilding(newBuilding);
-    setSuccess(true);
-    setFormData({
-      name: "",
-      location: "",
-      owners: [{ address: "", percentage: 100 }],
-    });
-    setFiles({
-      partnershipAgreement: null,
-      maintenanceAgreement: null,
-      rentAgreement: null,
-    });
 
     setTimeout(() => setSuccess(false), 5000);
   };
@@ -294,7 +282,7 @@ export default function CreateBuildingForm() {
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => handleFileUpload(e, "partnershipAgreement")}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
+                  // required
                 />
                 <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
                   <Upload className="w-4 h-4 text-slate-400" />
@@ -318,7 +306,7 @@ export default function CreateBuildingForm() {
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => handleFileUpload(e, "maintenanceAgreement")}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
+                  // required
                 />
                 <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
                   <Upload className="w-4 h-4 text-slate-400" />
@@ -342,7 +330,7 @@ export default function CreateBuildingForm() {
                   accept=".pdf,.doc,.docx"
                   onChange={(e) => handleFileUpload(e, "rentAgreement")}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
+                  // required
                 />
                 <div className="flex items-center gap-2 px-4 py-2 border border-dashed border-slate-600 rounded-lg bg-slate-700/30 hover:bg-slate-700/50 transition-colors">
                   <Upload className="w-4 h-4 text-slate-400" />

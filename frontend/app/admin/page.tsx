@@ -2,22 +2,41 @@
 
 import { useAuth } from "@/lib/auth-context"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LogOut, SquarePlus, List, CheckCircle2 } from "lucide-react"
 import CreateBuildingForm from "@/components/admin/create-building-form"
 import BuildingsList from "@/components/admin/buildings-list"
 import RequestsList from "@/components/admin/requests-list"
+import { useAssetStore } from "@/lib/store"
 
 export default function AdminDashboard() {
   const router = useRouter()
   const { user, logout } = useAuth()
+  const { loadPropertiesFromBlockchain } = useAssetStore()
   const [activeTab, setActiveTab] = useState("buildings")
 
+  useEffect(() => {
+    if (user.isConnected) {
+      if (user.role === "admin") {
+        console.log("Admin user connected, loading all properties.");
+        loadPropertiesFromBlockchain(); // Admin sees all properties
+      } else {
+        console.log("Loading properties for user address:", user.address);
+        loadPropertiesFromBlockchain(user.address); // Regular user sees only their properties
+      }
+    }
+  }, [user, loadPropertiesFromBlockchain]);
+
+  useEffect(() => {
+    if (!user.isConnected || user.role !== "admin") {
+      router.push("/");
+    }
+  }, [user, router]);
+
   if (!user.isConnected || user.role !== "admin") {
-    router.push("/")
-    return null
+    return null;
   }
 
   const handleLogout = async () => {

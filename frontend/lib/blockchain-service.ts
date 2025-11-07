@@ -1,151 +1,277 @@
-/**
- * Blockchain Service - Handles token creation and smart contract interactions
- * This is a simulated service for demonstration purposes
- */
+import { ethers, Contract, Signer, Wallet } from "ethers";
+import PropertyRegistryArtifact from "../contracts/PropertyRegistry.json";
+import { CONTRACT_CONFIG, getRpcUrl } from "./contract-config";
+import type {
+  PropertyData,
+  PropertyDetails,
+  PropertyOwner,
+  RegisterPropertyParams,
+  TransferShareParams,
+  TransferFullOwnershipParams,
+} from "./contract-types";
 
-export interface TokenData {
-  tokenId: string
-  assetName: string
-  owner: string
-  createdAt: string
-  transactionHash: string
-  contractAddress: string
-}
 
-export interface TokenMetadata {
-  name: string
-  symbol: string
-  totalSupply: string
-  decimals: number
-  description: string
-  properties: {
-    location: string
-    type: string
-    createdDate: string
-  }
-}
 
 class BlockchainService {
-  private mockContractAddress = "0x1234567890123456789012345678901234567890"
+  private provider: ethers.JsonRpcProvider | null = null;
+  private contract: Contract | null = null;
+  private signer: Signer | null = null;
 
-  /**
-   * Create a new ERC-721 token for the building asset
-   */
-  async createBuildingToken(
-    buildingName: string,
-    location: string,
-    owner: string,
-    metadata: Record<string, string>,
-  ): Promise<TokenData> {
-    return new Promise((resolve) => {
-      // Simulate blockchain transaction delay
-      setTimeout(() => {
-        const tokenId = this.generateTokenId()
-        const txHash = this.generateTransactionHash()
+  async connectMetaMask(): Promise<string> {
+    if (typeof window.ethereum === 'undefined') {
+      throw new Error("MetaMask is not installed!");
+    }
 
-        resolve({
-          tokenId,
-          assetName: buildingName,
-          owner,
-          createdAt: new Date().toISOString(),
-          transactionHash: txHash,
-          contractAddress: this.mockContractAddress,
-        })
-      }, 1500)
-    })
+    try {
+      // Request account access
+      await window.ethereum.request({ method: 'eth_requestAccounts' });
+
+      this.provider = new ethers.BrowserProvider(window.ethereum);
+      this.signer = await this.provider.getSigner();
+      this.contract = new Contract(
+        CONTRACT_CONFIG.address,
+        PropertyRegistryArtifact.abi,
+        this.signer
+      );
+      return await this.signer.getAddress();
+    } catch (error) {
+      console.error("Failed to connect to MetaMask:", error);
+      throw error;
+    }
   }
 
   /**
-   * Verify token ownership
+   * Initialize the blockchain service with a provider or signer
+   * @param privateKey - Optional private key for Wallet signer
    */
-  async verifyTokenOwnership(tokenId: string, owner: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Mock verification - in production, query blockchain
-        resolve(true)
-      }, 800)
-    })
+  async initialize(privateKey?: string): Promise<string> {
+    try {
+      this.provider = new ethers.JsonRpcProvider(getRpcUrl());
+      if (privateKey) {
+        this.signer = new Wallet(privateKey, this.provider);
+        this.contract = new Contract(
+          CONTRACT_CONFIG.address,
+          PropertyRegistryArtifact.abi,
+          this.signer
+        );
+        return await this.signer.getAddress();
+      } else if (!this.signer) { // Only re-initialize with provider if no signer is present
+        // For read-only operations without a signer
+        this.contract = new Contract(
+          CONTRACT_CONFIG.address,
+          PropertyRegistryArtifact.abi,
+          this.provider
+        );
+        return ""; // No address associated with read-only provider
+      }
+      // If privateKey is not provided and a signer is already present, do nothing to preserve the signer
+      return this.signer ? await this.signer.getAddress() : "";
+      
+    } catch (error) {
+      console.error("Failed to initialize blockchain service:", error);
+      throw error;
+    }
+  }
+
+
+
+  /**
+   * Get the total number of properties
+   */
+  async getPropertyCount(): Promise<number> {
+    if (!this.contract) await this.initialize();
+    try {
+      const count = await this.contract!.propertyCount();
+      return Number(count);
+    } catch (error) {
+      console.error("Failed to get property count:", error);
+      return 0;
+    }
   }
 
   /**
-   * Transfer fractional ownership
+   * Get property details by ID
    */
-  async transferFractionalOwnership(tokenId: string, from: string, to: string, percentage: number): Promise<string> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.generateTransactionHash())
-      }, 1200)
-    })
+  async getProperty(propertyId: number): Promise<PropertyData | null> {
+    if (!this.contract) await this.initialize();
+    try {
+      const [id, name, ownersCount] = await this.contract!.getProperty(propertyId);
+      return {
+        id: Number(id),
+        name: name,
+        ownersCount: Number(ownersCount),
+      };
+    } catch (error) {
+      console.error(`Failed to get property ${propertyId}:`, error);
+      return null;
+    }
   }
 
   /**
-   * Get token metadata from IPFS/blockchain
+   * Get owners of a property
    */
-  async getTokenMetadata(tokenId: string): Promise<TokenMetadata> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          name: "Real Estate Asset Token",
-          symbol: "REAT",
-          totalSupply: "1",
-          decimals: 0,
-          description: "Tokenized real estate asset with fractional ownership support",
-          properties: {
-            location: "Manhattan, NY",
-            type: "Commercial Building",
-            createdDate: new Date().toISOString(),
-          },
-        })
-      }, 600)
-    })
+  async getOwners(propertyId: number): Promise<PropertyOwner[]> {
+    if (!this.contract) await this.initialize();
+    try {
+      const [ownerAddresses, ownerShares] = await this.contract!.getOwners(propertyId);
+      return ownerAddresses.map((address: string, index: number) => ({
+        wallet: address,
+        percentage: Number(ownerShares[index]),
+      }));
+    } catch (error) {
+      console.error(`Failed to get owners for property ${propertyId}:`, error);
+      return [];
+    }
   }
 
   /**
-   * Record maintenance event immutably on blockchain
+   * Get complete property details including owners
    */
-  async recordMaintenanceEvent(tokenId: string, description: string, cost: number, date: string): Promise<string> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(this.generateTransactionHash())
-      }, 1000)
-    })
-  }
+  async getPropertyDetails(propertyId: number): Promise<PropertyDetails | null> {
+    const property = await this.getProperty(propertyId);
+    if (!property) return null;
 
-  /**
-   * Mint batch tokens for multiple fractional owners
-   */
-  async mintBatchTokens(
-    mainTokenId: string,
-    owners: Array<{ address: string; percentage: number }>,
-  ): Promise<string[]> {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(owners.map(() => this.generateTransactionHash()))
-      }, 2000)
-    })
-  }
-
-  // Helper methods
-  private generateTokenId(): string {
-    return `0x${Math.random().toString(16).substr(2, 40)}`
-  }
-
-  private generateTransactionHash(): string {
-    return `0x${Math.random().toString(16).substr(2, 64)}`
-  }
-
-  /**
-   * Get gas price estimate for token creation
-   */
-  async estimateGasPrice(): Promise<{
-    gwei: number
-    usd: number
-  }> {
+    const owners = await this.getOwners(propertyId);
     return {
-      gwei: 45,
-      usd: 15.5,
+      id: property.id,
+      name: property.name,
+      owners,
+    };
+  }
+
+  /**
+   * Get all properties
+   */
+  async getAllProperties(): Promise<PropertyDetails[]> {
+    const count = await this.getPropertyCount();
+    const properties: PropertyDetails[] = [];
+
+    for (let i = 1; i <= count; i++) {
+      const property = await this.getPropertyDetails(i);
+      if (property) {
+        properties.push(property);
+      }
+    }
+
+    return properties;
+  }
+
+  /**
+   * Register a new property (requires signer)
+   */
+  async registerProperty(params: RegisterPropertyParams): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.contract || !this.signer) {
+      throw new Error("Signer not available. Please connect MetaMask first.");
+    }
+
+    try {
+      const tx = await this.contract.registerProperty(
+        params.name,
+        params.owners,
+        params.shares
+      );
+      const receipt = await tx.wait();
+      console.log("Property registered:", receipt);
+      return receipt;
+    } catch (error) {
+      console.error("Failed to register property:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transfer share of a property (requires signer)
+   */
+  async transferShare(params: TransferShareParams): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.contract || !this.signer) {
+      throw new Error("Signer not available. Please connect MetaMask first.");
+    }
+
+    try {
+      const tx = await this.contract.transferShare(
+        params.propertyId,
+        params.to,
+        params.percent
+      );
+      const receipt = await tx.wait();
+      console.log("Share transferred:", receipt);
+      return receipt;
+    } catch (error) {
+      console.error("Failed to transfer share:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transfer full ownership of a property (requires signer)
+   */
+  async transferFullOwnership(params: TransferFullOwnershipParams): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.contract || !this.signer) {
+      throw new Error("Signer not available. Please connect MetaMask first.");
+    }
+
+    try {
+      const tx = await this.contract.transferFullOwnership(
+        params.propertyId,
+        params.to
+      );
+      const receipt = await tx.wait();
+      console.log("Full ownership transferred:", receipt);
+      return receipt;
+    } catch (error) {
+      console.error("Failed to transfer full ownership:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Listen for PropertyRegistered events
+   */
+  onPropertyRegistered(callback: (propertyId: bigint, name: string) => void): void {
+    if (!this.contract) {
+      console.warn("Contract not initialized");
+      return;
+    }
+
+    this.contract.on("PropertyRegistered", callback);
+  }
+
+  /**
+   * Listen for ShareTransferred events
+   */
+  onShareTransferred(
+    callback: (propertyId: bigint, from: string, to: string, percent: bigint) => void
+  ): void {
+    if (!this.contract) {
+      console.warn("Contract not initialized");
+      return;
+    }
+
+    this.contract.on("ShareTransferred", callback);
+  }
+
+  /**
+   * Remove all event listeners
+   */
+  removeAllListeners(): void {
+    if (this.contract) {
+      this.contract.removeAllListeners();
+    }
+  }
+
+  /**
+   * Get the current connected address
+   */
+  async getCurrentAddress(): Promise<string | null> {
+    if (!this.signer) return null;
+    try {
+      return await this.signer.getAddress();
+    } catch (error) {
+      console.error("Failed to get current address:", error);
+      return null;
     }
   }
 }
 
-export const blockchainService = new BlockchainService()
+// Export a singleton instance
+export const blockchainService = new BlockchainService();

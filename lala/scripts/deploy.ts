@@ -24,6 +24,9 @@ async function main() {
   const tx = await propertyRegistry.registerProperty("Green Villa", owners, shares);
   await tx.wait();
 
+  const ty = await propertyRegistry.getProperty(1);
+  console.log("Registered Property Details:", ty);
+
   console.log("Sample property 'Green Villa' registered successfully!");
   console.log("Property Count:", (await propertyRegistry.propertyCount()).toString());
 }
