@@ -146,12 +146,12 @@ class BlockchainService {
 
   async registerProperty(params: RegisterPropertyParams): Promise<ethers.ContractTransactionReceipt | null> {
     if (!this.propertyRegistryContract || !this.signer) {
-      // throw new Error("Signer not available. Please connect MetaMask first.");
       await this.initialize();
     }
 
     try {
-      const tx = await this.propertyRegistryContract!.registerProperty(
+      // Estimate gas before sending the transaction
+      const gasEstimate = await this.propertyRegistryContract!.registerProperty.estimateGas(
         params.name,
         params.owner,
         params.partnershipAgreementUrl,
@@ -159,12 +159,26 @@ class BlockchainService {
         params.rentAgreementUrl,
         params.imageUrl
       );
+
+      const tx = await this.propertyRegistryContract!.registerProperty(
+        params.name,
+        params.owner,
+        params.partnershipAgreementUrl,
+        params.maintenanceAgreementUrl,
+        params.rentAgreementUrl,
+        params.imageUrl,
+        { gasLimit: gasEstimate }
+      );
+
       const receipt = await tx.wait();
       console.log("Property registered:", receipt);
       return receipt;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to register property:", error);
-      throw error;
+
+      // Attempt to get a more descriptive error message
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to register property.");
     }
   }
 
@@ -186,6 +200,52 @@ class BlockchainService {
       console.error("Failed to fractionalize NFT:", error);
       throw error;
     }
+  }
+
+  async transferFractionalNFT(
+    fractionalNFTAddress: string,
+    to: string,
+    amount: number
+  ): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.signer) {
+      throw new Error("Signer not available. Please connect MetaMask first.");
+    }
+
+    try {
+      const fractionalNFTContract = new Contract(
+        fractionalNFTAddress,
+        CONTRACT_CONFIG.fractionalNFT.abi,
+        this.signer
+      );
+
+      const tx = await fractionalNFTContract.transfer(to, amount);
+      const receipt = await tx.wait();
+      console.log("Transfer successful:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to transfer fractional NFT:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to transfer fractional NFT.");
+    }
+  }
+
+  private async getRevertReason(error: any): Promise<string | null> {
+    if (error.reason) {
+      return error.reason;
+    }
+
+    let reason: string | null = null;
+    if (error.data) {
+      try {
+        const decodedError = this.propertyRegistryContract!.interface.parseError(error.data);
+        if (decodedError) {
+          reason = decodedError.name;
+        }
+      } catch (e) {
+        console.error("Failed to parse error data:", e);
+      }
+    }
+    return reason;
   }
 
   async getFractionalNFTDetails(propertyId: number): Promise<any | null> {

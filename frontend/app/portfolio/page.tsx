@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { LogOut, Building2, Wallet } from "lucide-react"
 import { useEffect, useState } from "react"
 import { OwnedFractionalNFT } from "@/lib/contract-types"
+import AssetTransferModal from "@/components/user/asset-transfer-modal"
 
 interface OwnershipData {
   totalAssets: number
@@ -144,6 +145,10 @@ export default function PortfolioDashboard() {
                         </div>
                       </div>
                     </CardHeader>
+import AssetTransferModal from "@/components/user/asset-transfer-modal";
+
+// ... (imports)
+
                     <CardContent>
                       <div className="space-y-3">
                         <div>
@@ -164,6 +169,9 @@ export default function PortfolioDashboard() {
                             property
                           </p>
                         </div>
+                      </div>
+                      <div className="mt-4">
+                        <AssetTransferModal ownedNFT={holding} />
                       </div>
                     </CardContent>
                   </Card>

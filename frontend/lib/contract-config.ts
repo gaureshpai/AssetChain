@@ -5,15 +5,15 @@ import FractionalNFTABI from "../contracts/FractionalNFT.json";
 
 export const CONTRACT_CONFIG = {
   propertyRegistry: {
-    address: "0x683eE44052442cF4e2751244580ffc946a42e71e",
+    address: process.env.NEXT_PUBLIC_PROPERTYREG || "0x6C93dBfd665c959EFcf534Ef829919c09308cB81",
     abi: PropertyRegistryABI.abi,
   },
   fractionalizer: {
-    address: "0x7e9c827bFFEc3ECb838FD9f4FEfaD7b6cB557b20",
+    address: process.env.NEXT_PUBLIC_FRACTIONALIZER || "0x90608ec1DEE9D9e8A4d0458079Bf0B2EdA968a19",
     abi: FractionalizerABI.abi,
   },
   fractionalNFT: {
-    address: "0x1C6E56A1565B50d6BC4d42cAdC6270BD5C3c908a",
+    address: process.env.NEXT_PUBLIC_FRACTIONALNFT ||"0x3402Bf47C2335219e32ADD0F24921dE95d73d5F9",
     abi: FractionalNFTABI.abi,
   },
   // Network configuration - matches hardhat.config.ts
