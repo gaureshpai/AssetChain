@@ -92,6 +92,31 @@ class BlockchainService {
     }
   }
 
+  async initializeWithMagic(magic: any): Promise<string> {
+    try {
+      const provider = new ethers.BrowserProvider(magic.rpcProvider);
+      this.provider = provider;
+      this.signer = await provider.getSigner();
+      this.contract = new Contract(
+        CONTRACT_CONFIG.propertyRegistryAddress,
+        PropertyRegistryArtifact.abi,
+        this.signer
+      );
+      this.mediatedTransferContract = new Contract(
+        CONTRACT_CONFIG.mediatedTransferAddress,
+        MediatedTransferArtifact.abi,
+        this.signer
+      );
+      return await this.signer.getAddress();
+    } catch (error) {
+      console.error("Failed to initialize blockchain service with Magic:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the total number of properties
+   */
   async getPropertyCount(): Promise<number> {
     if (!this.propertyRegistryContract) await this.initialize();
     try {
