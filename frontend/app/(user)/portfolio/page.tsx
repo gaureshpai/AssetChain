@@ -10,6 +10,8 @@ import { useEffect, useState } from "react"
 import { OwnedFractionalNFT } from "@/lib/contract-types"
 import AssetTransferModal from "@/components/user/asset-transfer-modal"
 
+import { Skeleton } from "@/components/ui/skeleton"
+
 interface OwnershipData {
   totalAssets: number
   fractionalOwnership: OwnedFractionalNFT[]
@@ -56,42 +58,82 @@ export default function PortfolioDashboard() {
 
   if (!mounted || !ownershipData) {
     return (
-      <div className="min-h-screen bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
-        <div className="text-slate-400">Loading portfolio...</div>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-4xl space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-24 mb-1" />
+                <Skeleton className="h-3 w-48" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <Skeleton className="h-4 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-full mb-1" />
+                <Skeleton className="h-3 w-48" />
+              </CardContent>
+            </Card>
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-full" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <Card key={i}>
+                  <CardHeader>
+                    <Skeleton className="h-6 w-48" />
+                    <Skeleton className="h-4 w-32" />
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-10 w-32" />
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden">
-      <div className="absolute inset-0 bg-linear-to-br from-gray-900 via-gray-800 to-black opacity-50"></div>
+    <div className="min-h-screen relative overflow-hidden">
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="border-gray-700 bg-gray-800/60 backdrop-blur-lg shadow-lg shadow-blue-500/10">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-gray-400 text-sm flex items-center gap-2">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
                 Assets Owned
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-white">{ownershipData.totalAssets}</div>
-              <p className="text-xs text-gray-500 mt-1">Approved tokenized assets</p>
+              <div className="text-3xl font-bold">{ownershipData.totalAssets}</div>
+              <p className="text-xs text-muted-foreground mt-1">Approved tokenized assets</p>
             </CardContent>
           </Card>
 
-          <Card className="border-gray-700 bg-gray-800/60 backdrop-blur-lg shadow-lg shadow-blue-500/10">
+          <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-gray-400 text-sm flex items-center gap-2">
+              <CardTitle className="text-sm flex items-center gap-2">
                 <Wallet className="w-4 h-4" />
                 Wallet Address
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-xs font-mono text-gray-300 truncate">{user.address}</p>
-              <p className="text-xs text-gray-500 mt-2">Ethereum Network</p>
+              <p className="text-xs font-mono text-muted-foreground truncate">{user.address}</p>
+              <p className="text-xs text-muted-foreground mt-2">Ethereum Network</p>
             </CardContent>
           </Card>
         </div>
@@ -99,8 +141,8 @@ export default function PortfolioDashboard() {
         {/* Holdings */}
         <div>
           <div className="mb-4">
-            <h2 className="text-2xl font-bold text-white">Your Holdings</h2>
-            <p className="text-slate-400 text-sm">Fractional ownership of tokenized assets</p>
+            <h2 className="text-2xl font-bold">Your Holdings</h2>
+            <p className="text-muted-foreground text-sm">Fractional ownership of tokenized assets</p>
           </div>
 
           {ownershipData.fractionalOwnership.length > 0 ? (
@@ -109,37 +151,34 @@ export default function PortfolioDashboard() {
                 return (
                   <Card
                     key={index}
-                    className="border-gray-700 bg-gray-800/60 backdrop-blur-lg hover:border-gray-600 transition-colors shadow-md hover:shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 cursor-pointer"
+                    className="hover:border-primary transition-colors shadow-md hover:shadow-lg cursor-pointer"
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-white">{holding.propertyName}</CardTitle>
-                          <CardDescription className="text-gray-400">Token ID: {holding.propertyId}</CardDescription>
+                          <CardTitle>{holding.propertyName}</CardTitle>
+                          <CardDescription>Token ID: {holding.propertyId}</CardDescription>
                         </div>
                       </div>
                     </CardHeader>
-                    import AssetTransferModal from "@/components/user/asset-transfer-modal";
-
-                    // ... (imports)
 
                     <CardContent>
                       <div className="space-y-3">
                         <div>
-                          <p className="text-xs text-gray-400 mb-1">Ownership Stake</p>
+                          <p className="text-xs text-muted-foreground mb-1">Ownership Stake</p>
                           <div className="flex items-center gap-2">
-                            <div className="flex-1 bg-gray-700 rounded-full h-2">
+                            <div className="flex-1 bg-muted rounded-full h-2">
                               <div
-                                className="bg-linear-to-r from-blue-600 to-indigo-600 h-full rounded-full"
+                                className="bg-primary h-full rounded-full"
                                 style={{ width: `${holding.percentage}%` }}
                               ></div>
                             </div>
-                            <span className="text-sm font-bold text-white">{holding.percentage.toFixed(2)}%</span>
+                            <span className="text-sm font-bold">{holding.percentage.toFixed(2)}%</span>
                           </div>
                         </div>
-                        <div className="pt-2 border-t border-gray-700">
-                          <p className="text-xs text-gray-500">
-                            You own <span className="text-white font-semibold">{holding.percentage.toFixed(2)}%</span> of this
+                        <div className="pt-2 border-t border-border">
+                          <p className="text-xs text-muted-foreground">
+                            You own <span className="text-foreground font-semibold">{holding.percentage.toFixed(2)}%</span> of this
                             property
                           </p>
                         </div>
@@ -153,11 +192,11 @@ export default function PortfolioDashboard() {
               })}
             </div>
           ) : (
-            <Card className="border-gray-700 bg-gray-800/60 backdrop-blur-lg shadow-lg shadow-blue-500/10">
+            <Card>
               <CardContent className="pt-12 text-center">
-                <Building2 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400">No tokenized assets in your portfolio yet</p>
-                <p className="text-sm text-gray-500 mt-1">Check back when new assets are listed</p>
+                <Building2 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No tokenized assets in your portfolio yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Check back when new assets are listed</p>
               </CardContent>
             </Card>
           )}

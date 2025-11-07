@@ -1,8 +1,10 @@
 import { ethers, Contract, Signer, Wallet, BrowserProvider, JsonRpcProvider } from "ethers";
 import { CONTRACT_CONFIG, getRpcUrl } from "./contract-config";
 import type {
+  CreatePropertyRequestParams,
   PropertyData,
   PropertyDetails,
+  PropertyRequest,
   RegisterPropertyParams,
 } from "./contract-types";
 
@@ -78,7 +80,19 @@ class BlockchainService {
         return addr || "";
       }
 
-      this.provider = new ethers.JsonRpcProvider(getRpcUrl());
+      this.provider = new ethers.JsonRpcProvider(
+        getRpcUrl(),
+        undefined,
+        {
+          staticNetwork: true,
+          batchMaxCount: 1,
+          fetchOptions: {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          }
+        } as any
+      );
       let currentSigner: Signer | null = null;
 
       if (privateKey) {
@@ -155,7 +169,7 @@ class BlockchainService {
   async getPropertyCount(): Promise<number> {
     if (!this.propertyRegistryContract) await this.initialize();
     try {
-      const count = await this.propertyRegistryContract!.propertyCount();
+      const count = await this.propertyRegistryContract?.propertyCount();
       return Number(count);
     } catch (error) {
       console.error("Failed to get property count:", error);
@@ -166,8 +180,8 @@ class BlockchainService {
   async getProperty(propertyId: number): Promise<PropertyData | null> {
     if (!this.propertyRegistryContract) await this.initialize();
     try {
-      const [id, name, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl, imageUrl] = await this.propertyRegistryContract!.getProperty(propertyId);
-      const owner = await this.propertyRegistryContract!.ownerOf(propertyId);
+      const [id, name, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl, imageUrl] = await this.propertyRegistryContract?.getProperty(propertyId);
+      const owner = await this.propertyRegistryContract?.ownerOf(propertyId);
       return {
         id: Number(id),
         name: name,
@@ -180,6 +194,102 @@ class BlockchainService {
     } catch (error) {
       console.error(`Failed to get property ${propertyId}:`, error);
       return null;
+    }
+  }
+
+  async requestCount(): Promise<number> {
+    if (!this.propertyRegistryContract) await this.initialize();
+    try {
+      const count = await this.propertyRegistryContract?.requestCount();
+      return Number(count);
+    } catch (error) {
+      console.error("Failed to get request count:", error);
+      return 0;
+    }
+  }
+
+  async getRequest(requestId: number): Promise<PropertyRequest | null> {
+    if (!this.propertyRegistryContract) await this.initialize();
+    try {
+      const [id, name, partnershipAgreementUrl, maintenanceAgreementUrl, rentAgreementUrl, imageUrl, requester, status, propertyId] = await this.propertyRegistryContract?.getRequest(requestId);
+      return {
+        id: Number(id),
+        name: name,
+        partnershipAgreementUrl,
+        maintenanceAgreementUrl,
+        rentAgreementUrl,
+        imageUrl,
+        requester: requester,
+        status: Number(status),
+        propertyId: Number(propertyId),
+        owners: [], // Owners are fetched separately
+      };
+    } catch (error) {
+      console.error(`Failed to get request ${requestId}:`, error);
+      return null;
+    }
+  }
+
+  async getRequestOwners(requestId: number): Promise<[string[], number[]]> {
+    if (!this.propertyRegistryContract) await this.initialize();
+    try {
+      const [ownerAddresses, percentages] = await this.propertyRegistryContract?.getRequestOwners(requestId);
+      return [ownerAddresses, percentages.map(Number)];
+    } catch (error) {
+      console.error(`Failed to get request owners for request ${requestId}:`, error);
+      return [[], []];
+    }
+  }
+
+  async approveRequest(requestId: number): Promise<number | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+    try {
+      // const gasEstimate = await this.propertyRegistryContract?.approveRequest.estimateGas(requestId);
+      // const tx = await this.propertyRegistryContract?.approveRequest(requestId, { gasLimit: gasEstimate });
+      const tx = await this.propertyRegistryContract?.approveRequest(requestId);
+      const receipt = await tx.wait();
+      console.log("Request approved:", receipt);
+
+      // Parse the receipt to find the PropertyRequestApproved event
+      const event = receipt?.logs?.find((log: any) => {
+        try {
+          const parsed = this.propertyRegistryContract?.interface.parseLog(log);
+          return parsed?.name === "PropertyRequestApproved";
+        } catch (e) {
+          return false;
+        }
+      });
+
+      if (event) {
+        const parsedEvent = this.propertyRegistryContract?.interface.parseLog(event);
+        return Number(parsedEvent?.args.propertyId);
+      } else {
+        console.warn("PropertyRequestApproved event not found in transaction receipt.");
+        return null;
+      }
+    } catch (error: any) {
+      console.error("Failed to approve request:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to approve request.");
+    }
+  }
+
+  async rejectRequest(requestId: number): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+    try {
+      const gasEstimate = await this.propertyRegistryContract?.rejectRequest.estimateGas(requestId);
+      const tx = await this.propertyRegistryContract?.rejectRequest(requestId, { gasLimit: gasEstimate });
+      const receipt = await tx.wait();
+      console.log("Request rejected:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to reject request:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to reject request.");
     }
   }
 
@@ -199,6 +309,46 @@ class BlockchainService {
     }));
   }
 
+  async createPropertyRequest(params: CreatePropertyRequestParams): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+
+    try {
+      // Estimate gas before sending the transaction
+      const gasEstimate = await this.propertyRegistryContract?.createPropertyRequest.estimateGas(
+        params.name,
+        params.partnershipAgreementUrl,
+        params.maintenanceAgreementUrl,
+        params.rentAgreementUrl,
+        params.imageUrl,
+        params.ownerAddresses,
+        params.percentages
+      );
+
+      const tx = await this.propertyRegistryContract?.createPropertyRequest(
+        params.name,
+        params.partnershipAgreementUrl,
+        params.maintenanceAgreementUrl,
+        params.rentAgreementUrl,
+        params.imageUrl,
+        params.ownerAddresses,
+        params.percentages,
+        { gasLimit: gasEstimate }
+      );
+
+      const receipt = await tx.wait();
+      console.log("Property request created:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to create property request:", error);
+
+      // Attempt to get a more descriptive error message
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to create property request.");
+    }
+  }
+
   async registerProperty(params: RegisterPropertyParams): Promise<ethers.ContractTransactionReceipt | null> {
     if (!this.propertyRegistryContract || !this.signer) {
       await this.initialize();
@@ -206,7 +356,7 @@ class BlockchainService {
 
     try {
       // Estimate gas before sending the transaction
-      const gasEstimate = await this.propertyRegistryContract!.registerProperty.estimateGas(
+      const gasEstimate = await this.propertyRegistryContract?.registerProperty.estimateGas(
         params.name,
         params.owner,
         params.partnershipAgreementUrl,
@@ -215,7 +365,7 @@ class BlockchainService {
         params.imageUrl
       );
 
-      const tx = await this.propertyRegistryContract!.registerProperty(
+      const tx = await this.propertyRegistryContract?.registerProperty(
         params.name,
         params.owner,
         params.partnershipAgreementUrl,
@@ -284,6 +434,138 @@ class BlockchainService {
     }
   }
 
+  async approveFractionalNFTTransfer(
+    fractionalNFTAddress: string,
+    spender: string,
+    amount: number
+  ): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.signer) {
+      throw new Error("Signer not available. Please connect MetaMask first.");
+    }
+    try {
+      const fractionalNFTContract = new Contract(
+        String(fractionalNFTAddress).toLowerCase(),
+        CONTRACT_CONFIG.fractionalNFT.abi,
+        this.signer
+      );
+      const tx = await fractionalNFTContract.approve(spender, amount);
+      const receipt = await tx.wait();
+      console.log("Approval successful:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to approve fractional NFT transfer:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to approve fractional NFT transfer.");
+    }
+  }
+
+  async listFractionalNFTForSale(
+    propertyId: number,
+    fractionalNFTAddress: string,
+    amount: number,
+    pricePerShare: number
+  ): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+    try {
+      const tx = await this.propertyRegistryContract?.listFractionalNFTForSale(
+        propertyId,
+        fractionalNFTAddress,
+        amount,
+        pricePerShare,
+        { nonce: await this.signer!.getNonce() }
+      );
+      const receipt = await tx.wait();
+      console.log("NFT listed for sale:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to list NFT for sale:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to list NFT for sale.");
+    }
+  }
+
+  async cancelListing(listingId: number): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+    try {
+      const tx = await this.propertyRegistryContract?.cancelListing(listingId);
+      const receipt = await tx.wait();
+      console.log("Listing cancelled:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to cancel listing:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to cancel listing.");
+    }
+  }
+
+  async buyListedFractionalNFT(
+    listingId: number,
+    amountToBuy: number,
+    totalPrice: number
+  ): Promise<ethers.ContractTransactionReceipt | null> {
+    if (!this.propertyRegistryContract || !this.signer) {
+      await this.initialize();
+    }
+    try {
+      const tx = await this.propertyRegistryContract?.buyListedFractionalNFT(
+        listingId,
+        amountToBuy,
+        { value: totalPrice }
+      );
+      const receipt = await tx.wait();
+      console.log("NFT purchased:", receipt);
+      return receipt;
+    } catch (error: any) {
+      console.error("Failed to purchase NFT:", error);
+      const reason = await this.getRevertReason(error);
+      throw new Error(reason || "Failed to purchase NFT.");
+    }
+  }
+
+  async getListing(listingId: number): Promise<any | null> {
+    if (!this.propertyRegistryContract) await this.initialize();
+    try {
+      const listing = await this.propertyRegistryContract?.listings(listingId);
+      // Assuming the Listing struct returns its members in order
+      // struct Listing { uint256 listingId; uint256 propertyId; address fractionalNFTAddress; address seller; uint256 amount; uint256 pricePerShare; ListingStatus status; }
+      return {
+        listingId: Number(listing[0]),
+        propertyId: Number(listing[1]),
+        fractionalNFTAddress: listing[2],
+        seller: listing[3],
+        amount: Number(listing[4]),
+        pricePerShare: Number(listing[5]),
+        status: Number(listing[6]), // Convert to enum if needed
+      };
+    } catch (error) {
+      console.error(`Failed to get listing ${listingId}:`, error);
+      return null;
+    }
+  }
+
+  async getAllActiveListings(): Promise<any[]> {
+    if (!this.propertyRegistryContract) await this.initialize();
+    try {
+      const activeListings = await this.propertyRegistryContract?.getAllActiveListings();
+      return activeListings.map((listing: any) => ({
+        listingId: Number(listing[0]),
+        propertyId: Number(listing[1]),
+        fractionalNFTAddress: listing[2],
+        seller: listing[3],
+        amount: Number(listing[4]),
+        pricePerShare: Number(listing[5]),
+        status: Number(listing[6]),
+      }));
+    } catch (error) {
+      console.error("Failed to get all active listings:", error);
+      return [];
+    }
+  }
+
   private async getRevertReason(error: any): Promise<string | null> {
     if (error.reason) {
       return error.reason;
@@ -292,7 +574,7 @@ class BlockchainService {
     let reason: string | null = null;
     if (error.data) {
       try {
-        const decodedError = this.propertyRegistryContract!.interface.parseError(error.data);
+        const decodedError = this.propertyRegistryContract?.interface.parseError(error.data);
         if (decodedError) {
           reason = decodedError.name;
         }
@@ -306,7 +588,7 @@ class BlockchainService {
   async getFractionalNFTDetails(propertyId: number): Promise<any | null> {
     if (!this.fractionalizerContract || !this.provider) await this.initialize();
     try {
-      const fractionalNFTAddress = await this.fractionalizerContract!.nftFractions(propertyId);
+      const fractionalNFTAddress = await this.fractionalizerContract?.fractionalContracts?.(propertyId);
       if (fractionalNFTAddress === ethers.ZeroAddress) return null;
 
       const fractionalNFTContract = new Contract(
@@ -334,8 +616,12 @@ class BlockchainService {
   async getOwnedFractionalNFTs(ownerAddress: string): Promise<any[]> {
     const properties = await this.getAllProperties();
     if (properties.length === 0) return [];
-
+    
     const detailsList = await Promise.all(properties.map((p) => this.getFractionalNFTDetails(p.id)));
+    console.log("Properties:", detailsList);
+
+    // Fetch all active listings once
+    const allActiveListings = await this.getAllActiveListings();
 
     const results = await Promise.all(detailsList.map(async (details, idx) => {
       if (!details) return null;
@@ -344,8 +630,23 @@ class BlockchainService {
         CONTRACT_CONFIG.fractionalNFT.abi,
         this.provider
       );
-      const balance = await fractionalNFTContract.balanceOf(ownerAddress);
-      if (Number(balance) <= 0) return null;
+      let balance = Number(await fractionalNFTContract.balanceOf(ownerAddress));
+
+      // Calculate listed amount for this specific fractional NFT and owner
+      const listedAmount = allActiveListings.reduce((sum, listing) => {
+        if (
+          listing.seller.toLowerCase() === ownerAddress.toLowerCase() &&
+          listing.fractionalNFTAddress.toLowerCase() === details.address.toLowerCase()
+        ) {
+          return sum + listing.amount;
+        }
+        return sum;
+      }, 0);
+
+      // Add listed amount back to balance for display purposes
+      balance += listedAmount;
+
+      if (balance <= 0) return null;
       const property = properties[idx]!;
       return {
         propertyId: property.id,
@@ -354,8 +655,8 @@ class BlockchainService {
         fractionalNFTName: details.name,
         fractionalNFTSymbol: details.symbol,
         totalSupply: details.totalSupply,
-        balance: Number(balance),
-        percentage: (Number(balance) / details.totalSupply) * 100,
+        balance: balance, // Use the adjusted balance
+        percentage: (balance / details.totalSupply) * 100,
       };
     }));
 
@@ -390,6 +691,56 @@ class BlockchainService {
     } catch (error) {
       console.error("Failed to get current address:", error);
       return null;
+    }
+  }
+
+  /**
+   * Fund a new user account with test ETH from Ganache
+   * This uses the first Ganache account as the funding source
+   */
+  async fundNewUser(userAddress: string, amountInEth: string = "10"): Promise<void> {
+    try {
+      // Create a provider to the RPC endpoint
+      const provider = new ethers.JsonRpcProvider(
+        getRpcUrl(),
+        undefined,
+        {
+          staticNetwork: true,
+          batchMaxCount: 1,
+          fetchOptions: {
+            headers: {
+              'ngrok-skip-browser-warning': 'true'
+            }
+          }
+        } as any
+      );
+
+      // Check if user already has funds (skip if balance > 0)
+      const balance = await provider.getBalance(userAddress);
+      if (balance > 0) {
+        console.log(`User ${userAddress} already has ${ethers.formatEther(balance)} ETH`);
+        return;
+      }
+
+      // Use the funding private key from environment or default Ganache account
+      const fundingKey = process.env.NEXT_PUBLIC_FUNDING_PRIVATE_KEY ||
+        // Default first Ganache account private key (deterministic)
+        "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d";
+
+      const fundingSigner = new Wallet(fundingKey, provider);
+      
+      console.log(`Funding new user ${userAddress} with ${amountInEth} ETH...`);
+      
+      const tx = await fundingSigner.sendTransaction({
+        to: userAddress,
+        value: ethers.parseEther(amountInEth),
+      });
+
+      await tx.wait();
+      console.log(`Successfully funded ${userAddress} with ${amountInEth} ETH`);
+    } catch (error) {
+      console.error("Failed to fund new user:", error);
+      // Don't throw - funding failure shouldn't block login
     }
   }
 }

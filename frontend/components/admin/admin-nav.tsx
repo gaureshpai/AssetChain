@@ -9,8 +9,11 @@ import {
   FileSpreadsheet,
   Banknote,
   ShoppingBag,
+  Moon,
+  Sun,
 } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
+import { buttonVariants, Button } from "@/components/ui/button"
+import { useTheme } from "next-themes"
 
 const links = [
   { href: "/admin/buildings", text: "Buildings", icon: Building2 },
@@ -22,9 +25,10 @@ const links = [
 
 export default function AdminNav() {
   const pathname = usePathname()
+  const { theme, setTheme } = useTheme();
 
   return (
-    <nav className="flex items-center gap-1 bg-slate-800/70 border border-slate-700/60 rounded-xl px-3 py-2 backdrop-blur-md shadow-sm">
+    <nav className="flex items-center gap-1 bg-card border border-border rounded-xl px-3 py-2 backdrop-blur shadow-sm">
       {links.map(({ href, text, icon: Icon }) => {
         const isActive = pathname === href
         return (
@@ -33,9 +37,9 @@ export default function AdminNav() {
             href={href}
             className={cn(
               buttonVariants({ variant: "ghost", size: "sm" }),
-              "flex items-center gap-2 text-sm text-slate-300 transition-all duration-200",
-              "hover:text-amber-400 hover:bg-slate-700/40",
-              isActive && "bg-amber-600/20 text-amber-400 border border-amber-600/40"
+              "flex items-center gap-2 text-sm text-muted-foreground transition-all duration-200",
+              "hover:text-foreground hover:bg-accent",
+              isActive && "bg-primary/20 text-primary border border-primary/40"
             )}
           >
             <Icon className="w-4 h-4" />
@@ -43,6 +47,11 @@ export default function AdminNav() {
           </Link>
         )
       })}
+      <Button variant="ghost" size="icon" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
+        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
     </nav>
   )
 }

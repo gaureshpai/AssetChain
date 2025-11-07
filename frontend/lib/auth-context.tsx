@@ -4,6 +4,7 @@ import type React from 'react';
 import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Magic } from 'magic-sdk';
 import { blockchainService } from './blockchain-service';
+import { getAccountByEmail, hasGanacheAccount } from './ganache-accounts';
 
 interface User {
   email?: string;
@@ -28,8 +29,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const createMagic = () => {
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY) {
     return new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY, {
-      network:{
-        rpcUrl: "http://127.0.0.1:7545",
+      network: {
+        rpcUrl: "https://a3298686ee98.ngrok-free.app/",
         chainId: 1337,
       }
     });
@@ -59,9 +60,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isLoggedIn) {
           const info = await (magic.user as any).getInfo();
           if (info?.email) {
-            // Initialize EVM wallet via Magic and get the address
-            const address = await blockchainService.initializeWithMagic(magic);
-            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+            // Check if email has a mapped Ganache account
+            const ganacheAccount = getAccountByEmail(info.email);
+            if (!ganacheAccount) {
+              console.error(`No Ganache account mapped for ${info.email}`);
+              await magic.user.logout();
+              return;
+            }
+
+            // Initialize blockchain service with the mapped private key
+            const address = await blockchainService.initialize(ganacheAccount.privateKey);
+            
+            const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com').toLowerCase();
             const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(info.email.toLowerCase());
             const next = {
               email: info.email,
@@ -89,16 +99,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkUser();
   }, [magic]);
 
+  useEffect(() => {
+    const checkAdminSession = async () => {
+      const adminEmail = localStorage.getItem('adminEmail');
+      if (adminEmail) {
+        setIsLoading(true);
+        try {
+          const adminPk = process.env.NEXT_PUBLIC_ADMIN_PRIVATE_KEY;
+          if (!adminPk) throw new Error('Admin private key not configured');
+          const address = await blockchainService.initialize(adminPk);
+          setUser({
+            email: adminEmail,
+            address,
+            role: 'admin',
+            isConnected: true,
+          });
+        } catch (error) {
+          console.error('Failed to auto-login admin:', error);
+          localStorage.removeItem('adminEmail'); // Clear invalid session
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    checkAdminSession();
+  }, []); // Run only once on mount
+
   const authenticate = useCallback(async (email: string) => {
     setIsLoading(true);
     try {
       if (!magic) throw new Error('Magic SDK not initialized');
+      
+      // Check if email has a mapped Ganache account
+      const ganacheAccount = getAccountByEmail(email);
+      if (!ganacheAccount) {
+        throw new Error(`No Ganache account mapped for ${email}. Please use one of the pre-configured emails.`);
+      }
+
       // Passwordless: send magic link to email
       await magic.auth.loginWithEmailOTP({ email });
 
-      // Initialize EVM wallet via Magic and get the address
-      const address = await blockchainService.initializeWithMagic(magic);
-      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || process.env.NEXT_PUBLIC_ADMIN_EMAIL || '').toLowerCase();
+      // Initialize blockchain service with the mapped private key and address
+      const address = await blockchainService.initialize(ganacheAccount.privateKey);
+      
+      const adminList = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@example.com').toLowerCase();
       const isAdmin = adminList.split(',').map(s=>s.trim()).filter(Boolean).includes(email.toLowerCase());
       const next = {
         email,
@@ -143,6 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       role: null,
       isConnected: false,
     });
+    localStorage.removeItem('adminEmail'); // Clear admin email from localStorage
   }, [magic]);
 
   const adminLogin = useCallback(async (email: string, password: string) => {
@@ -151,6 +196,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { adminLoginAction } = await import('@/app/actions/admin-auth');
       const res = await adminLoginAction(email, password);
       if (!res.success) throw new Error(res.error || 'Invalid admin credentials');
+      
+      // Store admin email in localStorage for persistence
+      localStorage.setItem('adminEmail', email);
+
       const adminPk = process.env.NEXT_PUBLIC_ADMIN_PRIVATE_KEY;
       if (!adminPk) throw new Error('Admin private key not configured');
       const address = await blockchainService.initialize(adminPk);
