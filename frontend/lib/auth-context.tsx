@@ -1,12 +1,7 @@
 "use client";
 
 import type React from "react";
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-} from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { blockchainService } from "./blockchain-service";
 
 interface User {
@@ -17,7 +12,10 @@ interface User {
 
 interface AuthContextType {
   user: User;
-  loginWithPrivateKey: (privateKey: string, role: "user" | "admin") => Promise<void>;
+  loginWithPrivateKey: (
+    privateKey: string,
+    role: "user" | "admin"
+  ) => Promise<void>;
   adminLogin: (password: string) => Promise<boolean>;
   logout: () => void;
   loginWithMetaMask: () => Promise<void>;
@@ -39,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // Check if admin was previously logged in
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const isAdmin = localStorage.getItem("isAdmin");
       if (isAdmin === "true") {
         // Re-login with private key to get the actual address
@@ -48,7 +46,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const loginWithPrivateKey = async (privateKey: string, role: "user" | "admin") => {
+  const loginWithPrivateKey = async (
+    privateKey: string,
+    role: "user" | "admin"
+  ) => {
     setIsLoading(true);
     try {
       const address = await blockchainService.initialize(privateKey);
@@ -58,22 +59,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isConnected: true,
       });
       if (role === "admin") {
-        if (typeof window !== 'undefined') {
+        if (typeof window !== "undefined") {
           localStorage.setItem("isAdmin", "true");
         }
       }
     } catch (error) {
       console.error(`${role} login failed:`, error);
-      alert(`Failed to connect to local blockchain network with provided private key.`);
+      alert(
+        `Failed to connect to local blockchain network with provided private key.`
+      );
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-
-
-  const adminLogin = async(password: string): Promise<boolean> => {
+  const adminLogin = async (password: string): Promise<boolean> => {
     if (password === ADMIN_PASSWORD) {
       // For admin, we'll assume a predefined private key for local development
       const ADMIN_PRIVATE_KEY = "0xcbbf8ac155841ea450c8da715255f14b6f386433d5fe4e9b1cd8cd48576e4d1f"; // Example private key
@@ -113,7 +114,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loginWithPrivateKey, adminLogin, logout, loginWithMetaMask, isLoading }}
+      value={{
+        user,
+        loginWithPrivateKey,
+        adminLogin,
+        logout,
+        loginWithMetaMask,
+        isLoading,
+      }}
     >
       {children}
     </AuthContext.Provider>
