@@ -15,7 +15,7 @@ export default function AdminLoginPage() {
 
   useEffect(() => {
     if (user.isConnected) {
-      if (user.role === "admin") router.push("/admin");
+      if (user.role === "admin") router.push("/admin/buildings");
       else setError("This email is not authorized as an admin.");
     }
   }, [user, router]);

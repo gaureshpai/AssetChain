@@ -2,7 +2,6 @@ import React from "react";
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
-import AppShell from "@/components/app-shell";
 
 export const metadata = {
   title: "undefined",
@@ -19,7 +18,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           {/* Client shell adds navbar for user pages */}
-          <AppShell>{children}</AppShell>
+          {children}
         </AuthProvider>
       </body>
     </html>

@@ -27,7 +27,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Initialize Magic SDK
 const createMagic = () => {
   if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY) {
-    return new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY);
+    return new Magic(process.env.NEXT_PUBLIC_MAGIC_PUBLISHABLE_KEY, {
+      network:{
+        rpcUrl: "http://127.0.0.1:7545",
+        chainId: 1337,
+      }
+    });
   }
   return null;
 };

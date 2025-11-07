@@ -10,7 +10,7 @@ export default function Home() {
 
   useEffect(() => {
     if (user.isConnected) {
-      router.push(user.role === 'admin' ? '/admin' : '/portfolio');
+      router.push(user.role === 'admin' ? '/admin/buildings' : '/portfolio');
     }
   }, [user, router]);
 
