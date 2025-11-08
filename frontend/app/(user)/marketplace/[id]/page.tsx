@@ -291,17 +291,17 @@ export default function MarketplaceDetailPage() {
               <CardContent className="space-y-2">
                 <Button asChild variant="outline" className="w-full justify-start">
                   <a href={property.partnershipAgreementUrl} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="h-4 w-4 mr-2" /> Partnership Agreement
+                    <LinkIcon className="h-4 w-4 mr-2" /> Document of Proof 1
                   </a>
                 </Button>
                 <Button asChild variant="outline" className="w-full justify-start">
                   <a href={property.maintenanceAgreementUrl} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="h-4 w-4 mr-2" /> Maintenance Agreement
+                    <LinkIcon className="h-4 w-4 mr-2" /> Document of Proof 1
                   </a>
                 </Button>
                 <Button asChild variant="outline" className="w-full justify-start">
                   <a href={property.rentAgreementUrl} target="_blank" rel="noopener noreferrer">
-                    <LinkIcon className="h-4 w-4 mr-2" /> Rent Agreement
+                    <LinkIcon className="h-4 w-4 mr-2" /> Document of Proof 1
                   </a>
                 </Button>
               </CardContent>

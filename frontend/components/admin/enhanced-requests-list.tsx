@@ -134,9 +134,9 @@ export default function EnhancedRequestsList({ propertyId }: { propertyId: numbe
           <CardContent>
             <p className="text-muted-foreground">Requester: {request.requester}</p>
             <p className="text-muted-foreground">Image URL: <a href={request.imageUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Image</a></p>
-            <p className="text-muted-foreground">Partnership Agreement: <a href={request.partnershipAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
-            <p className="text-muted-foreground">Maintenance Agreement: <a href={request.maintenanceAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
-            <p className="text-muted-foreground">Rent Agreement: <a href={request.rentAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
+            <p className="text-muted-foreground">Document of Proof 1: <a href={request.partnershipAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
+            <p className="text-muted-foreground">Document of Proof 1: <a href={request.maintenanceAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
+            <p className="text-muted-foreground">Document of Proof 1: <a href={request.rentAgreementUrl} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">View Document</a></p>
             <div className="mt-2">
               <h4 className="text-foreground font-semibold">Owners:</h4>
               {request.owners.map((owner, idx) => (
