@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Upload, FileCheck, AlertCircle } from "lucide-react";
 import { uploadFileToAzure } from "@/lib/azure-blob-storage";
-import {toast} from "sonner";
+import { toast } from "sonner";
 
 interface FileUpload {
   partnershipAgreement: File | null;
@@ -30,10 +30,12 @@ export default function CreateBuildingForm() {
   const [formData, setFormData] = useState({
     name: "",
   });
-  const [owners, setOwners] = useState<{
-    address: string;
-    percentage: number;
-  }[]>([{ address: "", percentage: 100 }]);
+  const [owners, setOwners] = useState<
+    {
+      address: string;
+      percentage: number;
+    }[]
+  >([{ address: "", percentage: 100 }]);
   const [files, setFiles] = useState<FileUpload>({
     partnershipAgreement: null,
     maintenanceAgreement: null,
@@ -121,7 +123,9 @@ export default function CreateBuildingForm() {
     }
 
     if (totalPercentage !== 10000) {
-      setErrorMsg("Total percentage for owners must equal 100% (10000 basis points).");
+      setErrorMsg(
+        "Total percentage for owners must equal 100% (10000 basis points)."
+      );
       return;
     }
 
@@ -138,8 +142,12 @@ export default function CreateBuildingForm() {
     setUploading(true);
 
     try {
-      const partnershipAgreementUrl = await uploadFileToAzure(files.partnershipAgreement);
-      const maintenanceAgreementUrl = await uploadFileToAzure(files.maintenanceAgreement);
+      const partnershipAgreementUrl = await uploadFileToAzure(
+        files.partnershipAgreement
+      );
+      const maintenanceAgreementUrl = await uploadFileToAzure(
+        files.maintenanceAgreement
+      );
       const rentAgreementUrl = await uploadFileToAzure(files.rentAgreement);
       const imageUrl = await uploadFileToAzure(files.imageFile);
 
@@ -165,16 +173,18 @@ export default function CreateBuildingForm() {
         imageFile: null,
       });
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to create property request on blockchain.");
-      toast.error(err.message || "Failed to create property request on blockchain.");
-    }
-    finally {
+      setErrorMsg(
+        err.message || "Failed to create property request on blockchain."
+      );
+      toast.error(
+        err.message || "Failed to create property request on blockchain."
+      );
+    } finally {
       setUploading(false);
     }
 
     setTimeout(() => setSuccess(false), 5000);
   };
-
 
   return (
     <Card>
@@ -187,21 +197,22 @@ export default function CreateBuildingForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {success && (
-            <Alert variant="default">
-              <FileCheck className="h-4 w-4" />
-              <AlertDescription>
-                Building asset created successfully! Token created and pending
-                approval.
-              </AlertDescription>
-            </Alert>
-          ) && toast.success("Building asset created successfully! Token created and pending approval.")}
+              <Alert variant="default">
+                <FileCheck className="h-4 w-4" />
+                <AlertDescription>
+                  Building asset created successfully! Token created and pending
+                  approval.w
+                </AlertDescription>
+              </Alert>
+            ) &&
+            toast.success(
+              "Building asset created successfully! Token created and pending approval."
+            )}
 
           {errorMsg && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {errorMsg}
-              </AlertDescription>
+              <AlertDescription>{errorMsg}</AlertDescription>
             </Alert>
           )}
 
@@ -222,73 +233,84 @@ export default function CreateBuildingForm() {
                 required
               />
             </div>
+          </div>
 
-            </div>
-
-            {/* Owners and Percentages */}
-            <div className="space-y-4 p-4 rounded-lg border">
-              <h3 className="font-semibold">Owners and Percentages (Total must be 100%)</h3>
-              {owners.map((owner, index) => (
-                <div key={index} className="flex items-end gap-2">
-                  <div className="grow space-y-2">
-                    <label className="text-sm font-medium text-foreground">
-                      Owner {index + 1} Wallet Address *
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="0x..."
-                      value={owner.address}
-                      onChange={(e) =>
-                        handleOwnerChange(index, "address", e.target.value)
-                      }
-                      className="font-mono text-xs"
-                      required
-                    />
-                  </div>
-                  <div className="w-24 space-y-2">
-                    <label className="text-sm font-medium text-foreground">
-                      Percentage (%) *
-                    </label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="100"
-                      placeholder="e.g., 50"
-                      value={owner.percentage / 100} // Display as percentage, but store as basis points
-                      onChange={(e) =>
-                        handleOwnerChange(index, "percentage", Number(e.target.value) * 100)
-                      }
-                      required
-                    />
-                  </div>
-                  {owners.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      onClick={() => removeOwner(index)}
-                      className="h-10 w-10 p-0"
-                    >
-                      -
-                    </Button>
-                  )}
+          {/* Owners and Percentages */}
+          <div className="space-y-4 p-4 rounded-lg border">
+            <h3 className="font-semibold">
+              Owners and Percentages (Total must be 100%)
+            </h3>
+            {owners.map((owner, index) => (
+              <div key={index} className="flex items-end gap-2">
+                <div className="grow space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Owner {index + 1} Wallet Address *
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="0x..."
+                    value={owner.address}
+                    onChange={(e) =>
+                      handleOwnerChange(index, "address", e.target.value)
+                    }
+                    className="font-mono text-xs"
+                    required
+                  />
                 </div>
-              ))}
-              <Button type="button" onClick={addOwner} variant="secondary" className="w-full">
-                Add Another Owner
-              </Button>
-              <p className="text-sm text-muted-foreground mt-2">
-                Total Percentage: {owners.reduce((sum, owner) => sum + owner.percentage, 0) / 100}%
-              </p>
-            </div>
+                <div className="w-24 space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Percentage (%) *
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    max="100"
+                    placeholder="e.g., 50"
+                    value={owner.percentage / 100} // Display as percentage, but store as basis points
+                    onChange={(e) =>
+                      handleOwnerChange(
+                        index,
+                        "percentage",
+                        Number(e.target.value) * 100
+                      )
+                    }
+                    required
+                  />
+                </div>
+                {owners.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onClick={() => removeOwner(index)}
+                    className="h-10 w-10 p-0"
+                  >
+                    -
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button
+              type="button"
+              onClick={addOwner}
+              variant="secondary"
+              className="w-full"
+            >
+              Add Another Owner
+            </Button>
+            <p className="text-sm text-muted-foreground mt-2">
+              Total Percentage:{" "}
+              {owners.reduce((sum, owner) => sum + owner.percentage, 0) / 100}%
+            </p>
+          </div>
 
-            {/* Document Uploads */}
+          {/* Document Uploads */}
           <div className="space-y-4 p-4 rounded-lg border">
             <h3 className="font-semibold">Required Documents</h3>
 
             {/* Partnership Agreement */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Partnership Agreement *
+                Document of Proof 1 *
               </label>
               <div className="relative">
                 <input
@@ -303,7 +325,7 @@ export default function CreateBuildingForm() {
                   <span className="text-sm text-muted-foreground">
                     {files.partnershipAgreement
                       ? files.partnershipAgreement.name
-                      : "Upload partnership agreement"}
+                      : "Upload Document of Proof 1"}
                   </span>
                 </div>
               </div>
@@ -312,7 +334,7 @@ export default function CreateBuildingForm() {
             {/* Maintenance Agreement */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Maintenance Agreement *
+                Document of Proof 2 *
               </label>
               <div className="relative">
                 <input
@@ -327,7 +349,7 @@ export default function CreateBuildingForm() {
                   <span className="text-sm text-muted-foreground">
                     {files.maintenanceAgreement
                       ? files.maintenanceAgreement.name
-                      : "Upload maintenance agreement"}
+                      : "Upload Document of Proof 2"}
                   </span>
                 </div>
               </div>
@@ -336,7 +358,7 @@ export default function CreateBuildingForm() {
             {/* Rent Agreement */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Rent Agreement *
+                Document of Proof 3 *
               </label>
               <div className="relative">
                 <input
@@ -351,7 +373,7 @@ export default function CreateBuildingForm() {
                   <span className="text-sm text-muted-foreground">
                     {files.rentAgreement
                       ? files.rentAgreement.name
-                      : "Upload rent agreement"}
+                      : "Upload Document of Proof 3"}
                   </span>
                 </div>
               </div>
@@ -376,7 +398,9 @@ export default function CreateBuildingForm() {
                 <div className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg bg-input hover:bg-accent transition-colors">
                   <Upload className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">
-                    {files.imageFile ? files.imageFile.name : "Upload property image"}
+                    {files.imageFile
+                      ? files.imageFile.name
+                      : "Upload property image"}
                   </span>
                 </div>
               </div>
